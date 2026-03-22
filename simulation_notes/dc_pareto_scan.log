@@ -1,0 +1,410 @@
+2026-03-18 11:27:36,901 [INFO] macOS detected (arm64): subprocess isolation ENABLED
+2026-03-18 11:27:36,901 [INFO] Note: subprocess mode is ~3-5x slower but crash-safe.
+2026-03-18 11:27:36,901 [INFO] Use --no_subprocess to disable (risk: segfault on some fluid combos).
+2026-03-18 11:27:36,901 [INFO] ======================================================================
+2026-03-18 11:27:36,901 [INFO] DC Carnot Battery Multi-Configuration Pareto Frontier Scan
+2026-03-18 11:27:36,901 [INFO] Start: 2026-03-18 11:27:36.901475
+2026-03-18 11:27:36,920 [INFO] Platform: macOS-15.5-arm64-arm-64bit
+2026-03-18 11:27:36,920 [INFO] Subprocess isolation: ENABLED
+2026-03-18 11:27:36,920 [INFO] Working points: ['DC-A', 'DC-B', 'DC-C', 'DC-D', 'DC-E', 'DC-F']
+2026-03-18 11:27:36,920 [INFO] Configurations: ['SBVCHP_SBORC', 'SBVCHP_SRORC', 'SRVCHP_SBORC', 'SRVCHP_SRORC']
+2026-03-18 11:27:36,920 [INFO] Samples per combo: 100
+2026-03-18 11:27:36,920 [INFO] ======================================================================
+2026-03-18 11:27:36,920 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 11:27:36,920 [INFO] Working point: DC-A | Air-cooled (Winter)
+2026-03-18 11:27:36,920 [INFO]   T_hs=35.0°C, T_cs=5.0°C, ΔT=30.0K
+2026-03-18 11:27:36,920 [INFO]   Critical point relation: at_critical
+2026-03-18 11:32:43,371 [INFO] macOS detected (arm64): subprocess isolation ENABLED
+2026-03-18 11:32:43,371 [INFO] Note: subprocess mode is ~3-5x slower but crash-safe.
+2026-03-18 11:32:43,371 [INFO] Use --no_subprocess to disable (risk: segfault on some fluid combos).
+2026-03-18 11:32:43,371 [INFO] ======================================================================
+2026-03-18 11:32:43,371 [INFO] DC Carnot Battery Multi-Configuration Pareto Frontier Scan
+2026-03-18 11:32:43,371 [INFO] Start: 2026-03-18 11:32:43.371924
+2026-03-18 11:32:43,404 [INFO] Platform: macOS-15.5-arm64-arm-64bit
+2026-03-18 11:32:43,404 [INFO] Subprocess isolation: ENABLED
+2026-03-18 11:32:43,404 [INFO] Working points: ['DC-A', 'DC-B', 'DC-C', 'DC-D', 'DC-E', 'DC-F']
+2026-03-18 11:32:43,404 [INFO] Configurations: ['SBVCHP_SBORC', 'SBVCHP_SRORC', 'SRVCHP_SBORC', 'SRVCHP_SRORC']
+2026-03-18 11:32:43,404 [INFO] Samples per combo: 100
+2026-03-18 11:32:43,404 [INFO] ======================================================================
+2026-03-18 11:32:43,404 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 11:32:43,404 [INFO] Working point: DC-A | Air-cooled (Winter)
+2026-03-18 11:32:43,404 [INFO]   T_hs=35.0°C, T_cs=5.0°C, ΔT=30.0K
+2026-03-18 11:32:43,404 [INFO]   Critical point relation: at_critical
+2026-03-18 11:34:31,668 [INFO] macOS detected (arm64): subprocess isolation ENABLED
+2026-03-18 11:34:31,668 [INFO] Note: subprocess mode is ~3-5x slower but crash-safe.
+2026-03-18 11:34:31,668 [INFO] Use --no_subprocess to disable (risk: segfault on some fluid combos).
+2026-03-18 11:34:31,668 [INFO] ======================================================================
+2026-03-18 11:34:31,668 [INFO] DC Carnot Battery Multi-Configuration Pareto Frontier Scan
+2026-03-18 11:34:31,669 [INFO] Start: 2026-03-18 11:34:31.668990
+2026-03-18 11:34:31,695 [INFO] Platform: macOS-15.5-arm64-arm-64bit
+2026-03-18 11:34:31,695 [INFO] Subprocess isolation: ENABLED
+2026-03-18 11:34:31,695 [INFO] Working points: ['DC-A', 'DC-B', 'DC-C', 'DC-D', 'DC-E', 'DC-F']
+2026-03-18 11:34:31,695 [INFO] Configurations: ['SBVCHP_SBORC', 'SBVCHP_SRORC', 'SRVCHP_SBORC', 'SRVCHP_SRORC']
+2026-03-18 11:34:31,695 [INFO] Samples per combo: 100
+2026-03-18 11:34:31,695 [INFO] ======================================================================
+2026-03-18 11:34:31,696 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 11:34:31,696 [INFO] Working point: DC-A | Air-cooled (Winter)
+2026-03-18 11:34:31,696 [INFO]   T_hs=35.0°C, T_cs=5.0°C, ΔT=30.0K
+2026-03-18 11:34:31,696 [INFO]   Critical point relation: at_critical
+2026-03-18 11:37:03,915 [INFO]   [DC-A/SBVCHP_SBORC] 535 evals, 298 valid (55.7%)
+2026-03-18 11:37:03,940 [INFO]   [DC-A/SBVCHP_SBORC] Pareto front: 15 solutions
+2026-03-18 11:37:26,632 [INFO]   [DC-A/SBVCHP_SRORC] 535 evals, 160 valid (29.9%)
+2026-03-18 11:37:26,654 [INFO]   [DC-A/SBVCHP_SRORC] Pareto front: 14 solutions
+2026-03-18 11:54:15,131 [INFO]   [DC-A/SRVCHP_SBORC] 535 evals, 307 valid (57.4%)
+2026-03-18 11:54:15,157 [INFO]   [DC-A/SRVCHP_SBORC] Pareto front: 15 solutions
+2026-03-18 11:54:35,890 [INFO]   [DC-A/SRVCHP_SRORC] 535 evals, 152 valid (28.4%)
+2026-03-18 11:54:35,898 [INFO]   [DC-A/SRVCHP_SRORC] Pareto front: 9 solutions
+2026-03-18 11:54:35,900 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 11:54:35,900 [INFO] Working point: DC-B | Air-cooled (Summer)
+2026-03-18 11:54:35,900 [INFO]   T_hs=40.0°C, T_cs=25.0°C, ΔT=15.0K
+2026-03-18 11:54:35,900 [INFO]   Critical point relation: below_critical
+2026-03-18 12:01:25,738 [INFO]   [DC-B/SBVCHP_SBORC] 442 evals, 239 valid (54.1%)
+2026-03-18 12:01:25,747 [INFO]   [DC-B/SBVCHP_SBORC] Pareto front: 13 solutions
+2026-03-18 12:01:47,017 [INFO]   [DC-B/SBVCHP_SRORC] 442 evals, 89 valid (20.1%)
+2026-03-18 12:01:47,037 [INFO]   [DC-B/SBVCHP_SRORC] Pareto front: 13 solutions
+2026-03-18 12:01:58,695 [INFO]   [DC-B/SRVCHP_SBORC] 442 evals, 233 valid (52.7%)
+2026-03-18 12:01:58,704 [INFO]   [DC-B/SRVCHP_SBORC] Pareto front: 8 solutions
+2026-03-18 12:02:09,385 [INFO] macOS detected (arm64): subprocess isolation ENABLED
+2026-03-18 12:02:09,386 [INFO] Note: subprocess mode is ~3-5x slower but crash-safe.
+2026-03-18 12:02:09,386 [INFO] Use --no_subprocess to disable (risk: segfault on some fluid combos).
+2026-03-18 12:02:09,386 [INFO] ======================================================================
+2026-03-18 12:02:09,386 [INFO] DC Carnot Battery Multi-Configuration Pareto Frontier Scan
+2026-03-18 12:02:09,386 [INFO] Start: 2026-03-18 12:02:09.386361
+2026-03-18 12:02:09,409 [INFO] Platform: macOS-15.5-arm64-arm-64bit
+2026-03-18 12:02:09,409 [INFO] Subprocess isolation: ENABLED
+2026-03-18 12:02:09,409 [INFO] Working points: ['DC-A', 'DC-B', 'DC-C', 'DC-D', 'DC-E', 'DC-F']
+2026-03-18 12:02:09,409 [INFO] Configurations: ['SBVCHP_SBORC', 'SBVCHP_SRORC', 'SRVCHP_SBORC', 'SRVCHP_SRORC']
+2026-03-18 12:02:09,409 [INFO] Samples per combo: 100
+2026-03-18 12:02:09,409 [INFO] ======================================================================
+2026-03-18 12:02:09,409 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 12:02:09,409 [INFO] Working point: DC-A | Air-cooled (Winter)
+2026-03-18 12:02:09,409 [INFO]   T_hs=35.0°C, T_cs=5.0°C, ΔT=30.0K
+2026-03-18 12:02:09,409 [INFO]   Critical point relation: at_critical
+2026-03-18 12:02:18,354 [INFO]   [DC-B/SRVCHP_SRORC] 442 evals, 83 valid (18.8%)
+2026-03-18 12:02:18,361 [INFO]   [DC-B/SRVCHP_SRORC] Pareto front: 8 solutions
+2026-03-18 12:02:18,363 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 12:02:18,363 [INFO] Working point: DC-C | Cold-plate liquid (Winter)
+2026-03-18 12:02:18,363 [INFO]   T_hs=50.0°C, T_cs=5.0°C, ΔT=45.0K
+2026-03-18 12:02:18,363 [INFO]   Critical point relation: above_critical
+2026-03-18 12:02:24,142 [INFO]   [DC-A/SBVCHP_SBORC] 541 evals, 323 valid (59.7%)
+2026-03-18 12:02:24,159 [INFO]   [DC-A/SBVCHP_SBORC] Pareto front: 17 solutions
+2026-03-18 12:02:35,132 [INFO]   [DC-C/SBVCHP_SBORC] 553 evals, 331 valid (59.9%)
+2026-03-18 12:02:35,149 [INFO]   [DC-C/SBVCHP_SBORC] Pareto front: 24 solutions
+2026-03-18 12:02:44,425 [INFO]   [DC-A/SBVCHP_SRORC] 541 evals, 178 valid (32.9%)
+2026-03-18 12:02:44,433 [INFO]   [DC-A/SBVCHP_SRORC] Pareto front: 10 solutions
+2026-03-18 12:03:02,156 [INFO]   [DC-C/SBVCHP_SRORC] 553 evals, 171 valid (30.9%)
+2026-03-18 12:03:02,166 [INFO]   [DC-C/SBVCHP_SRORC] Pareto front: 14 solutions
+2026-03-18 12:03:03,308 [INFO]   [DC-A/SRVCHP_SBORC] 541 evals, 299 valid (55.3%)
+2026-03-18 12:03:03,316 [INFO]   [DC-A/SRVCHP_SBORC] Pareto front: 12 solutions
+2026-03-18 12:03:21,013 [INFO]   [DC-C/SRVCHP_SBORC] 553 evals, 302 valid (54.6%)
+2026-03-18 12:03:21,028 [INFO]   [DC-C/SRVCHP_SBORC] Pareto front: 24 solutions
+2026-03-18 12:03:24,171 [INFO]   [DC-A/SRVCHP_SRORC] 541 evals, 164 valid (30.3%)
+2026-03-18 12:03:24,177 [INFO]   [DC-A/SRVCHP_SRORC] Pareto front: 10 solutions
+2026-03-18 12:03:24,180 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 12:03:24,180 [INFO] Working point: DC-B | Air-cooled (Summer)
+2026-03-18 12:03:24,180 [INFO]   T_hs=40.0°C, T_cs=25.0°C, ΔT=15.0K
+2026-03-18 12:03:24,180 [INFO]   Critical point relation: below_critical
+2026-03-18 12:03:36,267 [INFO]   [DC-B/SBVCHP_SBORC] 442 evals, 226 valid (51.1%)
+2026-03-18 12:03:36,276 [INFO]   [DC-B/SBVCHP_SBORC] Pareto front: 11 solutions
+2026-03-18 12:03:39,846 [INFO]   [DC-C/SRVCHP_SRORC] 553 evals, 169 valid (30.6%)
+2026-03-18 12:03:39,854 [INFO]   [DC-C/SRVCHP_SRORC] Pareto front: 14 solutions
+2026-03-18 12:03:39,856 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 12:03:39,856 [INFO] Working point: DC-D | Cold-plate liquid (Summer)
+2026-03-18 12:03:39,856 [INFO]   T_hs=55.0°C, T_cs=25.0°C, ΔT=30.0K
+2026-03-18 12:03:39,856 [INFO]   Critical point relation: at_critical
+2026-03-18 12:03:53,709 [INFO]   [DC-D/SBVCHP_SBORC] 467 evals, 257 valid (55.0%)
+2026-03-18 12:03:53,731 [INFO]   [DC-D/SBVCHP_SBORC] Pareto front: 14 solutions
+2026-03-18 12:03:59,362 [INFO]   [DC-B/SBVCHP_SRORC] 442 evals, 86 valid (19.5%)
+2026-03-18 12:03:59,367 [INFO]   [DC-B/SBVCHP_SRORC] Pareto front: 10 solutions
+2026-03-18 12:06:07,853 [INFO] macOS detected (arm64): subprocess isolation ENABLED
+2026-03-18 12:06:07,854 [INFO] Note: subprocess mode is ~3-5x slower but crash-safe.
+2026-03-18 12:06:07,854 [INFO] Use --no_subprocess to disable (risk: segfault on some fluid combos).
+2026-03-18 12:06:07,854 [INFO] ======================================================================
+2026-03-18 12:06:07,854 [INFO] DC Carnot Battery Multi-Configuration Pareto Frontier Scan
+2026-03-18 12:06:07,854 [INFO] Start: 2026-03-18 12:06:07.854336
+2026-03-18 12:06:07,877 [INFO] Platform: macOS-15.5-arm64-arm-64bit
+2026-03-18 12:06:07,877 [INFO] Subprocess isolation: ENABLED
+2026-03-18 12:06:07,877 [INFO] Working points: ['DC-A', 'DC-B', 'DC-C', 'DC-D', 'DC-E', 'DC-F']
+2026-03-18 12:06:07,877 [INFO] Configurations: ['SBVCHP_SBORC', 'SBVCHP_SRORC', 'SRVCHP_SBORC', 'SRVCHP_SRORC']
+2026-03-18 12:06:07,877 [INFO] Samples per combo: 100
+2026-03-18 12:06:07,877 [INFO] ======================================================================
+2026-03-18 12:06:07,877 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 12:06:07,877 [INFO] Working point: DC-A | Air-cooled (Winter)
+2026-03-18 12:06:07,877 [INFO]   T_hs=35.0°C, T_cs=5.0°C, ΔT=30.0K
+2026-03-18 12:06:07,877 [INFO]   Critical point relation: at_critical
+2026-03-18 12:06:31,666 [INFO]   [DC-A/SBVCHP_SBORC] 549 evals, 326 valid (59.4%)
+2026-03-18 12:06:31,686 [INFO]   [DC-A/SBVCHP_SBORC] Pareto front: 22 solutions
+2026-03-18 12:06:57,271 [INFO]   [DC-A/SBVCHP_SRORC] 549 evals, 155 valid (28.2%)
+2026-03-18 12:06:57,279 [INFO]   [DC-A/SBVCHP_SRORC] Pareto front: 18 solutions
+2026-03-18 12:07:19,149 [INFO]   [DC-A/SRVCHP_SBORC] 549 evals, 307 valid (55.9%)
+2026-03-18 12:07:19,160 [INFO]   [DC-A/SRVCHP_SBORC] Pareto front: 12 solutions
+2026-03-18 12:07:44,118 [INFO]   [DC-A/SRVCHP_SRORC] 549 evals, 150 valid (27.3%)
+2026-03-18 12:07:44,126 [INFO]   [DC-A/SRVCHP_SRORC] Pareto front: 13 solutions
+2026-03-18 12:07:44,128 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 12:07:44,128 [INFO] Working point: DC-B | Air-cooled (Summer)
+2026-03-18 12:07:44,128 [INFO]   T_hs=40.0°C, T_cs=25.0°C, ΔT=15.0K
+2026-03-18 12:07:44,128 [INFO]   Critical point relation: below_critical
+2026-03-18 12:08:04,067 [INFO]   [DC-B/SBVCHP_SBORC] 433 evals, 217 valid (50.1%)
+2026-03-18 12:08:04,074 [INFO]   [DC-B/SBVCHP_SBORC] Pareto front: 17 solutions
+2026-03-18 12:08:31,565 [INFO]   [DC-B/SBVCHP_SRORC] 433 evals, 89 valid (20.6%)
+2026-03-18 12:08:31,568 [INFO]   [DC-B/SBVCHP_SRORC] Pareto front: 10 solutions
+2026-03-18 12:08:51,538 [INFO]   [DC-B/SRVCHP_SBORC] 433 evals, 216 valid (49.9%)
+2026-03-18 12:08:51,546 [INFO]   [DC-B/SRVCHP_SBORC] Pareto front: 18 solutions
+2026-03-18 12:09:19,585 [INFO]   [DC-B/SRVCHP_SRORC] 433 evals, 86 valid (19.9%)
+2026-03-18 12:09:19,591 [INFO]   [DC-B/SRVCHP_SRORC] Pareto front: 17 solutions
+2026-03-18 12:09:19,593 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 12:09:19,593 [INFO] Working point: DC-C | Cold-plate liquid (Winter)
+2026-03-18 12:09:19,593 [INFO]   T_hs=50.0°C, T_cs=5.0°C, ΔT=45.0K
+2026-03-18 12:09:19,593 [INFO]   Critical point relation: above_critical
+2026-03-18 12:09:43,039 [INFO]   [DC-C/SBVCHP_SBORC] 564 evals, 347 valid (61.5%)
+2026-03-18 12:09:43,056 [INFO]   [DC-C/SBVCHP_SBORC] Pareto front: 32 solutions
+2026-03-18 12:10:11,274 [INFO]   [DC-C/SBVCHP_SRORC] 564 evals, 172 valid (30.5%)
+2026-03-18 12:10:11,284 [INFO]   [DC-C/SBVCHP_SRORC] Pareto front: 28 solutions
+2026-03-18 12:10:34,437 [INFO]   [DC-C/SRVCHP_SBORC] 564 evals, 302 valid (53.5%)
+2026-03-18 12:10:34,448 [INFO]   [DC-C/SRVCHP_SBORC] Pareto front: 26 solutions
+2026-03-18 12:11:02,036 [INFO]   [DC-C/SRVCHP_SRORC] 564 evals, 162 valid (28.7%)
+2026-03-18 12:11:02,043 [INFO]   [DC-C/SRVCHP_SRORC] Pareto front: 17 solutions
+2026-03-18 12:11:02,046 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 12:11:02,046 [INFO] Working point: DC-D | Cold-plate liquid (Summer)
+2026-03-18 12:11:02,046 [INFO]   T_hs=55.0°C, T_cs=25.0°C, ΔT=30.0K
+2026-03-18 12:11:02,046 [INFO]   Critical point relation: at_critical
+2026-03-18 12:11:23,757 [INFO]   [DC-D/SBVCHP_SBORC] 476 evals, 258 valid (54.2%)
+2026-03-18 12:11:23,767 [INFO]   [DC-D/SBVCHP_SBORC] Pareto front: 17 solutions
+2026-03-18 12:11:56,167 [INFO]   [DC-D/SBVCHP_SRORC] 476 evals, 101 valid (21.2%)
+2026-03-18 12:11:56,184 [INFO]   [DC-D/SBVCHP_SRORC] Pareto front: 12 solutions
+2026-03-18 12:12:18,827 [INFO]   [DC-D/SRVCHP_SBORC] 476 evals, 241 valid (50.6%)
+2026-03-18 12:12:18,846 [INFO]   [DC-D/SRVCHP_SBORC] Pareto front: 15 solutions
+2026-03-18 12:12:48,582 [INFO]   [DC-D/SRVCHP_SRORC] 476 evals, 99 valid (20.8%)
+2026-03-18 12:12:48,588 [INFO]   [DC-D/SRVCHP_SRORC] Pareto front: 12 solutions
+2026-03-18 12:12:48,590 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 12:12:48,590 [INFO] Working point: DC-E | High-perf liquid (Winter)
+2026-03-18 12:12:48,590 [INFO]   T_hs=65.0°C, T_cs=5.0°C, ΔT=60.0K
+2026-03-18 12:12:48,590 [INFO]   Critical point relation: above_critical
+2026-03-18 12:12:56,851 [INFO]   [DC-E/SBVCHP_SBORC] 195 evals, 106 valid (54.4%)
+2026-03-18 12:12:56,856 [INFO]   [DC-E/SBVCHP_SBORC] Pareto front: 20 solutions
+2026-03-18 12:13:07,261 [INFO]   [DC-E/SBVCHP_SRORC] 195 evals, 53 valid (27.2%)
+2026-03-18 12:13:07,265 [INFO]   [DC-E/SBVCHP_SRORC] Pareto front: 16 solutions
+2026-03-18 12:13:15,516 [INFO]   [DC-E/SRVCHP_SBORC] 195 evals, 79 valid (40.5%)
+2026-03-18 12:13:15,520 [INFO]   [DC-E/SRVCHP_SBORC] Pareto front: 18 solutions
+2026-03-18 12:13:25,376 [INFO]   [DC-E/SRVCHP_SRORC] 195 evals, 46 valid (23.6%)
+2026-03-18 12:13:25,381 [INFO]   [DC-E/SRVCHP_SRORC] Pareto front: 14 solutions
+2026-03-18 12:13:25,383 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-18 12:13:25,383 [INFO] Working point: DC-F | High-perf liquid (Summer)
+2026-03-18 12:13:25,383 [INFO]   T_hs=75.0°C, T_cs=25.0°C, ΔT=50.0K
+2026-03-18 12:13:25,383 [INFO]   Critical point relation: above_critical
+2026-03-18 12:13:32,928 [INFO]   [DC-F/SBVCHP_SBORC] 179 evals, 79 valid (44.1%)
+2026-03-18 12:13:32,932 [INFO]   [DC-F/SBVCHP_SBORC] Pareto front: 17 solutions
+2026-03-18 12:13:43,073 [INFO]   [DC-F/SBVCHP_SRORC] 179 evals, 32 valid (17.9%)
+2026-03-18 12:13:43,076 [INFO]   [DC-F/SBVCHP_SRORC] Pareto front: 15 solutions
+2026-03-18 12:13:50,989 [INFO]   [DC-F/SRVCHP_SBORC] 179 evals, 58 valid (32.4%)
+2026-03-18 12:13:50,993 [INFO]   [DC-F/SRVCHP_SBORC] Pareto front: 13 solutions
+2026-03-18 12:14:00,725 [INFO]   [DC-F/SRVCHP_SRORC] 179 evals, 27 valid (15.1%)
+2026-03-18 12:14:00,727 [INFO]   [DC-F/SRVCHP_SRORC] Pareto front: 12 solutions
+2026-03-18 12:14:00,729 [INFO] 
+============================================================
+2026-03-18 12:14:00,729 [INFO] GLOBAL NON-DOMINATED SORTING
+2026-03-18 12:14:00,729 [INFO] ============================================================
+2026-03-18 12:14:00,730 [INFO] Total solutions before global NDS: 411
+2026-03-18 12:14:00,756 [INFO] Global Pareto front size: 38
+2026-03-18 12:14:00,762 [INFO] 
+============================================================
+2026-03-18 12:14:00,762 [INFO] CONFIGURATION FREQUENCY ANALYSIS
+2026-03-18 12:14:00,762 [INFO] ============================================================
+2026-03-18 12:14:00,764 [INFO]   SBVCHP_SBORC        :   1 / 38 = 2.6%
+2026-03-18 12:14:00,764 [INFO]   SBVCHP_SRORC        :   0 / 38 = 0.0%
+2026-03-18 12:14:00,764 [INFO]   SRVCHP_SBORC        :  14 / 38 = 36.8%
+2026-03-18 12:14:00,764 [INFO]   SRVCHP_SRORC        :  23 / 38 = 60.5%
+2026-03-18 12:14:00,764 [INFO] 
+============================================================
+2026-03-18 12:14:00,764 [INFO] WORKING POINT FREQUENCY ANALYSIS
+2026-03-18 12:14:00,764 [INFO] ============================================================
+2026-03-18 12:14:00,764 [INFO]   DC-A  :   7 / 38 = 18.4%
+2026-03-18 12:14:00,765 [INFO]   DC-B  :   0 / 38 = 0.0%
+2026-03-18 12:14:00,765 [INFO]   DC-C  :  13 / 38 = 34.2%
+2026-03-18 12:14:00,765 [INFO]   DC-D  :   0 / 38 = 0.0%
+2026-03-18 12:14:00,765 [INFO]   DC-E  :  18 / 38 = 47.4%
+2026-03-18 12:14:00,765 [INFO]   DC-F  :   0 / 38 = 0.0%
+2026-03-18 12:14:00,765 [INFO] 
+Scan complete: 2026-03-18 12:14:00.765726
+2026-03-18 12:14:00,765 [INFO] Results saved to: /Users/a1234/Downloads/CBSim_clean/simulation_notes/results
+2026-03-18 12:14:00,765 [INFO] 
+Generating plots...
+2026-03-18 12:14:01,142 [INFO] Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/figs/dc_global_pareto.png
+2026-03-18 12:14:01,592 [INFO] Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/figs/dc_per_wp_pareto.png
+2026-03-18 12:14:01,719 [INFO] Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/figs/dc_config_dominance.png
+2026-03-18 12:14:01,937 [INFO] Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/figs/dc_dimensionless_params.png
+2026-03-18 12:14:02,134 [INFO] Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/figs/dc_performance_vs_deltaT.png
+2026-03-18 12:14:02,234 [INFO] Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/figs/dc_fluid_distribution.png
+2026-03-18 12:14:02,235 [INFO] Done.
+2026-03-19 10:54:58,683 [INFO] Subprocess isolation DISABLED (Linux/direct mode).
+2026-03-19 10:54:58,684 [INFO] ======================================================================
+2026-03-19 10:54:58,684 [INFO] DC Carnot Battery Multi-Configuration Pareto Frontier Scan
+2026-03-19 10:54:58,684 [INFO] Start: 2026-03-19 10:54:58.684083
+2026-03-19 10:54:58,685 [INFO] Platform: Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39
+2026-03-19 10:54:58,685 [INFO] Subprocess isolation: DISABLED
+2026-03-19 10:54:58,685 [INFO] Working points: ['DC-A', 'DC-B', 'DC-C', 'DC-D', 'DC-E', 'DC-F']
+2026-03-19 10:54:58,685 [INFO] Configurations: ['SBVCHP_SBORC', 'SBVCHP_SRORC', 'SRVCHP_SBORC', 'SRVCHP_SRORC']
+2026-03-19 10:54:58,685 [INFO] Samples per combo: 600
+2026-03-19 10:54:58,685 [INFO] ======================================================================
+2026-03-19 10:54:58,685 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-19 10:54:58,685 [INFO] Working point: DC-A | Air-cooled (Winter)
+2026-03-19 10:54:58,685 [INFO]   T_hs=35.0°C, T_cs=5.0°C, ΔT=30.0K
+2026-03-19 10:54:58,685 [INFO]   Critical point relation: at_critical
+2026-03-19 10:55:02,779 [INFO]   [DC-A/SBVCHP_SBORC] 538 evals, 337 valid (62.6%)
+2026-03-19 10:55:02,804 [INFO]   [DC-A/SBVCHP_SBORC] Pareto front: 16 solutions
+2026-03-19 10:55:11,467 [INFO]   [DC-A/SBVCHP_SRORC] 538 evals, 162 valid (30.1%)
+2026-03-19 10:55:11,477 [INFO]   [DC-A/SBVCHP_SRORC] Pareto front: 18 solutions
+2026-03-19 10:55:15,259 [INFO]   [DC-A/SRVCHP_SBORC] 538 evals, 326 valid (60.6%)
+2026-03-19 10:55:15,270 [INFO]   [DC-A/SRVCHP_SBORC] Pareto front: 13 solutions
+2026-03-19 10:55:23,324 [INFO]   [DC-A/SRVCHP_SRORC] 538 evals, 162 valid (30.1%)
+2026-03-19 10:55:23,329 [INFO]   [DC-A/SRVCHP_SRORC] Pareto front: 12 solutions
+2026-03-19 10:55:23,332 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-19 10:55:23,332 [INFO] Working point: DC-B | Air-cooled (Summer)
+2026-03-19 10:55:23,332 [INFO]   T_hs=40.0°C, T_cs=25.0°C, ΔT=15.0K
+2026-03-19 10:55:23,332 [INFO]   Critical point relation: below_critical
+2026-03-19 10:55:26,360 [INFO]   [DC-B/SBVCHP_SBORC] 443 evals, 231 valid (52.1%)
+2026-03-19 10:55:26,366 [INFO]   [DC-B/SBVCHP_SBORC] Pareto front: 8 solutions
+2026-03-19 10:55:40,408 [INFO]   [DC-B/SBVCHP_SRORC] 443 evals, 94 valid (21.2%)
+2026-03-19 10:55:40,412 [INFO]   [DC-B/SBVCHP_SRORC] Pareto front: 8 solutions
+2026-03-19 10:55:43,550 [INFO]   [DC-B/SRVCHP_SBORC] 443 evals, 237 valid (53.5%)
+2026-03-19 10:55:43,556 [INFO]   [DC-B/SRVCHP_SBORC] Pareto front: 10 solutions
+2026-03-19 10:55:58,489 [INFO]   [DC-B/SRVCHP_SRORC] 443 evals, 98 valid (22.1%)
+2026-03-19 10:55:58,492 [INFO]   [DC-B/SRVCHP_SRORC] Pareto front: 9 solutions
+2026-03-19 10:55:58,495 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-19 10:55:58,495 [INFO] Working point: DC-C | Cold-plate liquid (Winter)
+2026-03-19 10:55:58,496 [INFO]   T_hs=50.0°C, T_cs=5.0°C, ΔT=45.0K
+2026-03-19 10:55:58,496 [INFO]   Critical point relation: above_critical
+2026-03-19 10:56:03,580 [INFO]   [DC-C/SBVCHP_SBORC] 561 evals, 329 valid (58.6%)
+2026-03-19 10:56:03,599 [INFO]   [DC-C/SBVCHP_SBORC] Pareto front: 32 solutions
+2026-03-19 10:56:16,195 [INFO]   [DC-C/SBVCHP_SRORC] 561 evals, 170 valid (30.3%)
+2026-03-19 10:56:16,206 [INFO]   [DC-C/SBVCHP_SRORC] Pareto front: 31 solutions
+2026-03-19 10:56:22,324 [INFO]   [DC-C/SRVCHP_SBORC] 561 evals, 308 valid (54.9%)
+2026-03-19 10:56:22,359 [INFO]   [DC-C/SRVCHP_SBORC] Pareto front: 27 solutions
+2026-03-19 10:56:33,201 [INFO]   [DC-C/SRVCHP_SRORC] 561 evals, 170 valid (30.3%)
+2026-03-19 10:56:33,210 [INFO]   [DC-C/SRVCHP_SRORC] Pareto front: 20 solutions
+2026-03-19 10:56:33,212 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-19 10:56:33,212 [INFO] Working point: DC-D | Cold-plate liquid (Summer)
+2026-03-19 10:56:33,212 [INFO]   T_hs=55.0°C, T_cs=25.0°C, ΔT=30.0K
+2026-03-19 10:56:33,212 [INFO]   Critical point relation: at_critical
+2026-03-19 10:56:36,817 [INFO]   [DC-D/SBVCHP_SBORC] 480 evals, 261 valid (54.4%)
+2026-03-19 10:56:36,827 [INFO]   [DC-D/SBVCHP_SBORC] Pareto front: 18 solutions
+2026-03-19 10:56:57,047 [INFO]   [DC-D/SBVCHP_SRORC] 480 evals, 93 valid (19.4%)
+2026-03-19 10:56:57,052 [INFO]   [DC-D/SBVCHP_SRORC] Pareto front: 16 solutions
+2026-03-19 10:57:02,071 [INFO]   [DC-D/SRVCHP_SBORC] 480 evals, 260 valid (54.2%)
+2026-03-19 10:57:02,081 [INFO]   [DC-D/SRVCHP_SBORC] Pareto front: 16 solutions
+2026-03-19 10:57:20,360 [INFO]   [DC-D/SRVCHP_SRORC] 480 evals, 102 valid (21.2%)
+2026-03-19 10:57:20,364 [INFO]   [DC-D/SRVCHP_SRORC] Pareto front: 11 solutions
+2026-03-19 10:57:20,366 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-19 10:57:20,366 [INFO] Working point: DC-E | High-perf liquid (Winter)
+2026-03-19 10:57:20,366 [INFO]   T_hs=65.0°C, T_cs=5.0°C, ΔT=60.0K
+2026-03-19 10:57:20,366 [INFO]   Critical point relation: above_critical
+2026-03-19 10:57:27,745 [INFO]   [DC-E/SBVCHP_SBORC] 582 evals, 308 valid (52.9%)
+2026-03-19 10:57:27,770 [INFO]   [DC-E/SBVCHP_SBORC] Pareto front: 38 solutions
+2026-03-19 10:57:41,745 [INFO]   [DC-E/SBVCHP_SRORC] 582 evals, 175 valid (30.1%)
+2026-03-19 10:57:41,757 [INFO]   [DC-E/SBVCHP_SRORC] Pareto front: 30 solutions
+2026-03-19 10:57:49,415 [INFO]   [DC-E/SRVCHP_SBORC] 582 evals, 243 valid (41.8%)
+2026-03-19 10:57:49,437 [INFO]   [DC-E/SRVCHP_SBORC] Pareto front: 39 solutions
+2026-03-19 10:58:01,776 [INFO]   [DC-E/SRVCHP_SRORC] 582 evals, 153 valid (26.3%)
+2026-03-19 10:58:01,785 [INFO]   [DC-E/SRVCHP_SRORC] Pareto front: 23 solutions
+2026-03-19 10:58:01,788 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-19 10:58:01,788 [INFO] Working point: DC-F | High-perf liquid (Summer)
+2026-03-19 10:58:01,788 [INFO]   T_hs=75.0°C, T_cs=25.0°C, ΔT=50.0K
+2026-03-19 10:58:01,788 [INFO]   Critical point relation: above_critical
+2026-03-19 10:58:07,017 [INFO]   [DC-F/SBVCHP_SBORC] 528 evals, 203 valid (38.4%)
+2026-03-19 10:58:07,029 [INFO]   [DC-F/SBVCHP_SBORC] Pareto front: 28 solutions
+2026-03-19 10:58:25,361 [INFO]   [DC-F/SBVCHP_SRORC] 528 evals, 96 valid (18.2%)
+2026-03-19 10:58:25,366 [INFO]   [DC-F/SBVCHP_SRORC] Pareto front: 23 solutions
+2026-03-19 10:58:32,859 [INFO]   [DC-F/SRVCHP_SBORC] 528 evals, 168 valid (31.8%)
+2026-03-19 10:58:32,868 [INFO]   [DC-F/SRVCHP_SBORC] Pareto front: 27 solutions
+2026-03-19 10:58:47,304 [INFO]   [DC-F/SRVCHP_SRORC] 528 evals, 86 valid (16.3%)
+2026-03-19 10:58:47,308 [INFO]   [DC-F/SRVCHP_SRORC] Pareto front: 20 solutions
+2026-03-19 10:58:47,311 [INFO] 
+============================================================
+2026-03-19 10:58:47,311 [INFO] GLOBAL NON-DOMINATED SORTING
+2026-03-19 10:58:47,311 [INFO] ============================================================
+2026-03-19 10:58:47,313 [INFO] Total solutions before global NDS: 493
+2026-03-19 10:58:47,366 [INFO] Global Pareto front size: 43
+2026-03-19 10:58:47,372 [INFO] 
+============================================================
+2026-03-19 10:58:47,372 [INFO] CONFIGURATION FREQUENCY ANALYSIS
+2026-03-19 10:58:47,372 [INFO] ============================================================
+2026-03-19 10:58:47,375 [INFO]   SBVCHP_SBORC        :   0 / 43 = 0.0%
+2026-03-19 10:58:47,375 [INFO]   SBVCHP_SRORC        :   0 / 43 = 0.0%
+2026-03-19 10:58:47,375 [INFO]   SRVCHP_SBORC        :  17 / 43 = 39.5%
+2026-03-19 10:58:47,375 [INFO]   SRVCHP_SRORC        :  26 / 43 = 60.5%
+2026-03-19 10:58:47,375 [INFO] 
+============================================================
+2026-03-19 10:58:47,375 [INFO] WORKING POINT FREQUENCY ANALYSIS
+2026-03-19 10:58:47,375 [INFO] ============================================================
+2026-03-19 10:58:47,375 [INFO]   DC-A  :   5 / 43 = 11.6%
+2026-03-19 10:58:47,376 [INFO]   DC-B  :   0 / 43 = 0.0%
+2026-03-19 10:58:47,376 [INFO]   DC-C  :   9 / 43 = 20.9%
+2026-03-19 10:58:47,376 [INFO]   DC-D  :   0 / 43 = 0.0%
+2026-03-19 10:58:47,376 [INFO]   DC-E  :  29 / 43 = 67.4%
+2026-03-19 10:58:47,376 [INFO]   DC-F  :   0 / 43 = 0.0%
+2026-03-19 10:58:47,376 [INFO] 
+Scan complete: 2026-03-19 10:58:47.376518
+2026-03-19 10:58:47,376 [INFO] Results saved to: /home/oxford/CBSim_of_DC/simulation_notes/results
+2026-03-19 10:58:47,376 [INFO] 
+Generating plots...
+2026-03-19 10:58:47,815 [INFO] Saved: /home/oxford/CBSim_of_DC/simulation_notes/figs/dc_global_pareto.png
+2026-03-19 10:58:48,646 [INFO] Saved: /home/oxford/CBSim_of_DC/simulation_notes/figs/dc_per_wp_pareto.png
+2026-03-19 10:58:48,878 [INFO] Saved: /home/oxford/CBSim_of_DC/simulation_notes/figs/dc_config_dominance.png
+2026-03-19 10:58:49,243 [INFO] Saved: /home/oxford/CBSim_of_DC/simulation_notes/figs/dc_dimensionless_params.png
+2026-03-19 10:58:49,620 [INFO] Saved: /home/oxford/CBSim_of_DC/simulation_notes/figs/dc_performance_vs_deltaT.png
+2026-03-19 10:58:49,828 [INFO] Saved: /home/oxford/CBSim_of_DC/simulation_notes/figs/dc_fluid_distribution.png
+2026-03-19 10:58:49,828 [INFO] Done.
+2026-03-19 11:06:35,611 [INFO] Subprocess isolation DISABLED (Linux/direct mode).
+2026-03-19 11:06:35,611 [INFO] ======================================================================
+2026-03-19 11:06:35,611 [INFO] DC Carnot Battery Multi-Configuration Pareto Frontier Scan
+2026-03-19 11:06:35,611 [INFO] Start: 2026-03-19 11:06:35.611893
+2026-03-19 11:06:35,613 [INFO] Platform: Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39
+2026-03-19 11:06:35,613 [INFO] Subprocess isolation: DISABLED
+2026-03-19 11:06:35,613 [INFO] Working points: ['DC-A', 'DC-B', 'DC-C', 'DC-D', 'DC-E', 'DC-F']
+2026-03-19 11:06:35,613 [INFO] Configurations: ['SBVCHP_SBORC', 'SBVCHP_SRORC', 'SRVCHP_SBORC', 'SRVCHP_SRORC']
+2026-03-19 11:06:35,613 [INFO] Samples per combo: 600
+2026-03-19 11:06:35,613 [INFO] ======================================================================
+2026-03-19 11:06:35,613 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-19 11:06:35,613 [INFO] Working point: DC-A | Air-cooled (Winter)
+2026-03-19 11:06:35,613 [INFO]   T_hs=35.0°C, T_cs=5.0°C, ΔT=30.0K
+2026-03-19 11:06:35,613 [INFO]   Critical point relation: at_critical
+2026-03-19 11:08:35,173 [INFO] Subprocess isolation DISABLED (Linux/direct mode).
+2026-03-19 11:08:35,174 [INFO] ======================================================================
+2026-03-19 11:08:35,174 [INFO] DC Carnot Battery Multi-Configuration Pareto Frontier Scan
+2026-03-19 11:08:35,174 [INFO] Start: 2026-03-19 11:08:35.174382
+2026-03-19 11:08:35,175 [INFO] Platform: Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39
+2026-03-19 11:08:35,175 [INFO] Subprocess isolation: DISABLED
+2026-03-19 11:08:35,176 [INFO] Working points: ['DC-A', 'DC-B', 'DC-C', 'DC-D', 'DC-E', 'DC-F']
+2026-03-19 11:08:35,176 [INFO] Configurations: ['SBVCHP_SBORC', 'SBVCHP_SRORC', 'SRVCHP_SBORC', 'SRVCHP_SRORC']
+2026-03-19 11:08:35,176 [INFO] Samples per combo: 600
+2026-03-19 11:08:35,176 [INFO] ======================================================================
+2026-03-19 11:08:35,176 [INFO] 
+────────────────────────────────────────────────────────────
+2026-03-19 11:08:35,176 [INFO] Working point: DC-A | Air-cooled (Winter)
+2026-03-19 11:08:35,176 [INFO]   T_hs=35.0°C, T_cs=5.0°C, ΔT=30.0K
+2026-03-19 11:08:35,176 [INFO]   Critical point relation: at_critical
+2026-03-19 11:08:38,418 [INFO]   [DC-A/SBVCHP_SBORC] 547 evals, 337 valid (61.6%)
+2026-03-19 11:08:38,439 [INFO]   [DC-A/SBVCHP_SBORC] Pareto front: 17 solutions
+2026-03-19 11:08:49,388 [INFO]   [DC-A/SBVCHP_SRORC] 547 evals, 178 valid (32.5%)
+2026-03-19 11:08:49,396 [INFO]   [DC-A/SBVCHP_SRORC] Pareto front: 18 solutions

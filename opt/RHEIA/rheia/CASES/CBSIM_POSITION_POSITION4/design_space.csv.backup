@@ -1,0 +1,47 @@
+# Design space for CBSim position4 based on literature optimization parameters
+# Extended mapping and systematic optimisation of the Carnot battery trilemma for sub-critical cycles
+# Table 1 and optimization settings
+
+# ========== Design variables (optimized by RHEIA) ==========
+# Continuous variables
+dT_hp_cs_gl,var,0.0,100.0          # ΔT_hs,gl: Heat source glide (K)
+dT_hp_ev_sh,var,3.0,20.0           # ΔT_hp,sh: HP superheat (K)
+dT_he_ev_sh,var,3.0,20.0           # ΔT_orc,sh: ORC superheat (K)
+dT_hp_cd_sc,var,3.0,50.0           # ΔT_hp,sc: HP subcooling (K)
+T_st_ht,var,50.0,150.0             # t_st,ht: Hot storage temperature (°C)
+dT_st_sp,var,5.0,100.0             # ΔT_st,sp: Storage temperature spread (K)
+
+# Discrete variables (integer indices for fluid selection)
+fluid_hp_idx,int,0,33              # HP working fluid index (0-33 maps to CoolProp names)
+fluid_he_idx,int,0,33              # ORC working fluid index (0-33 maps to CoolProp names)
+
+# Efficiency parameters (small ranges around literature values)
+eta_max_cp,var,0.70,0.80           # η_is,comp: Compressor isentropic efficiency
+eta_max_ex,var,0.70,0.80           # η_is,exp: Expander isentropic efficiency
+eta_pm,var,0.45,0.55               # η_is,pmp: Pump isentropic efficiency
+
+# ========== Fixed parameters for position4 ==========
+# Temperature conditions (fixed for this position)
+T_hp_cs,par,100.0                  # t_hs: Heat source temperature (°C) - fixed for position4
+T_he_cs,par,15.0                   # t_cs: Heat sink temperature (°C) - fixed for position4
+
+# Fixed glides and subcooling (from literature Table 1)
+dT_he_cs_gl,par,10.0               # ΔT_cs,gl: Heat sink glide fixed at 10 K
+dT_he_cd_sc,par,3.0                # ΔT_orc,sc: ORC subcooling fixed at 3 K
+
+# Pinch point temperatures (fixed at 3 K in literature)
+dT_hp_ev_pp,par,3.0                # ΔT_pp: HP evaporator pinch point
+dT_hp_cd_pp,par,3.0                # ΔT_pp: HP condenser pinch point
+dT_he_ev_pp,par,3.0                # ΔT_pp: ORC evaporator pinch point
+dT_he_cd_pp,par,3.0                # ΔT_pp: ORC condenser pinch point
+
+# Storage pressure (fixed at 7.5 bar in literature)
+# Note: p_st is implemented in model_wrapper.py, not needed here
+
+# Fluid selections (if not using indices, can be fixed here)
+# fluid_hp,par,R1233zd(E)          # Could be fixed, but using indices above
+# fluid_he,par,R227ea               # Could be fixed, but using indices above
+
+# Model configuration
+cb_type,par,3                      # Carnot battery type
+version,par,thermodynamic_full     # Model version

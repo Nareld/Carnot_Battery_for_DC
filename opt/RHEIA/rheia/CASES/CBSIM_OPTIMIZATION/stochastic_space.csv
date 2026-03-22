@@ -1,0 +1,7 @@
+T_hp_cs,par,normal,15.0,1.0
+T_he_cs,par,normal,15.0,1.0
+T_st_ht,par,normal,120.0,2.0
+eta_max_cp,par,normal,0.75,0.02
+eta_max_ex,par,normal,0.75,0.02
+dT_hp_ev_pp,par,normal,5.0,0.5
+dT_hp_cd_pp,par,normal,3.0,0.3

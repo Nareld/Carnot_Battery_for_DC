@@ -1,0 +1,159 @@
+{
+  "_comment": "Data Center Carnot Battery Multi-Configuration Optimization Config",
+  "_description": "6 DC operating points × 4 CB configurations for Pareto frontier analysis",
+
+  "working_points": {
+    "DC-A": {
+      "name": "DC-A",
+      "label": "Air-cooled (Winter)",
+      "cooling_type": "air_cooled",
+      "season": "winter",
+      "T_hs": 35.0,
+      "T_cs": 5.0,
+      "delta_T": 30.0,
+      "critical_point_relation": "at_critical",
+      "T_st_ht_min": 50.0,
+      "T_st_ht_max": 120.0,
+      "dT_st_sp_min": 15.0,
+      "dT_st_sp_max": 60.0
+    },
+    "DC-B": {
+      "name": "DC-B",
+      "label": "Air-cooled (Summer)",
+      "cooling_type": "air_cooled",
+      "season": "summer",
+      "T_hs": 40.0,
+      "T_cs": 25.0,
+      "delta_T": 15.0,
+      "critical_point_relation": "below_critical",
+      "T_st_ht_min": 55.0,
+      "T_st_ht_max": 120.0,
+      "dT_st_sp_min": 15.0,
+      "dT_st_sp_max": 60.0
+    },
+    "DC-C": {
+      "name": "DC-C",
+      "label": "Cold-plate liquid (Winter)",
+      "cooling_type": "cold_plate_liquid",
+      "season": "winter",
+      "T_hs": 50.0,
+      "T_cs": 5.0,
+      "delta_T": 45.0,
+      "critical_point_relation": "above_critical",
+      "T_st_ht_min": 65.0,
+      "T_st_ht_max": 130.0,
+      "dT_st_sp_min": 20.0,
+      "dT_st_sp_max": 70.0
+    },
+    "DC-D": {
+      "name": "DC-D",
+      "label": "Cold-plate liquid (Summer)",
+      "cooling_type": "cold_plate_liquid",
+      "season": "summer",
+      "T_hs": 55.0,
+      "T_cs": 25.0,
+      "delta_T": 30.0,
+      "critical_point_relation": "at_critical",
+      "T_st_ht_min": 70.0,
+      "T_st_ht_max": 130.0,
+      "dT_st_sp_min": 20.0,
+      "dT_st_sp_max": 70.0
+    },
+    "DC-E": {
+      "name": "DC-E",
+      "label": "High-perf liquid (Winter)",
+      "cooling_type": "high_perf_liquid",
+      "season": "winter",
+      "T_hs": 65.0,
+      "T_cs": 5.0,
+      "delta_T": 60.0,
+      "critical_point_relation": "above_critical",
+      "T_st_ht_min": 80.0,
+      "T_st_ht_max": 140.0,
+      "dT_st_sp_min": 25.0,
+      "dT_st_sp_max": 80.0
+    },
+    "DC-F": {
+      "name": "DC-F",
+      "label": "High-perf liquid (Summer)",
+      "cooling_type": "high_perf_liquid",
+      "season": "summer",
+      "T_hs": 75.0,
+      "T_cs": 25.0,
+      "delta_T": 50.0,
+      "critical_point_relation": "above_critical",
+      "T_st_ht_min": 90.0,
+      "T_st_ht_max": 145.0,
+      "dT_st_sp_min": 25.0,
+      "dT_st_sp_max": 80.0
+    }
+  },
+
+  "configurations": {
+    "SBVCHP_SBORC": {
+      "name": "SBVCHP+SBORC",
+      "label": "Basic HP + Basic ORC",
+      "class": "SBVCHP_SBORC_STES2T",
+      "has_hp_regenerator": false,
+      "has_he_regenerator": false,
+      "description": "Single-stage basic vapor compression HP + basic subcritical ORC"
+    },
+    "SBVCHP_SRORC": {
+      "name": "SBVCHP+SRORC",
+      "label": "Basic HP + Recuperated ORC",
+      "class": "SBVCHP_SRORC_STES2T",
+      "has_hp_regenerator": false,
+      "has_he_regenerator": true,
+      "description": "Single-stage basic vapor compression HP + recuperated subcritical ORC"
+    },
+    "SRVCHP_SBORC": {
+      "name": "SRVCHP+SBORC",
+      "label": "Recuperated HP + Basic ORC",
+      "class": "SRVCHP_SBORC_STES2T",
+      "has_hp_regenerator": true,
+      "has_he_regenerator": false,
+      "description": "Single-stage recuperated vapor compression HP + basic subcritical ORC"
+    },
+    "SRVCHP_SRORC": {
+      "name": "SRVCHP+SRORC",
+      "label": "Recuperated HP + Recuperated ORC",
+      "class": "SRVCHP_SRORC_STES2T",
+      "has_hp_regenerator": true,
+      "has_he_regenerator": true,
+      "description": "Single-stage recuperated vapor compression HP + recuperated subcritical ORC"
+    }
+  },
+
+  "fluid_candidates": {
+    "_comment": "HP fluid: Tc must be > T_st_ht + 20K. HE fluid: Tc must be > T_he_cs + 20K",
+    "hp_fluids": {
+      "R1233zd(E)": {"Tc_C": 166.5, "GWP": 1,   "class": "HCFO", "note": "Preferred low-GWP HP fluid"},
+      "R245fa":     {"Tc_C": 153.9, "GWP": 858,  "class": "HFC",  "note": "Widely used reference HP fluid"},
+      "R600a":      {"Tc_C": 134.7, "GWP": 3,    "class": "HC",   "note": "Natural refrigerant (isobutane)"},
+      "R600":       {"Tc_C": 152.0, "GWP": 4,    "class": "HC",   "note": "Natural refrigerant (n-butane)"}
+    },
+    "he_fluids": {
+      "R1234ze(E)": {"Tc_C": 109.4, "GWP": 1,    "class": "HFO",  "note": "Preferred low-GWP ORC fluid"},
+      "R227ea":     {"Tc_C": 101.8, "GWP": 3220, "class": "HFC",  "note": "High-density ORC fluid"},
+      "R134a":      {"Tc_C": 101.1, "GWP": 1430, "class": "HFC",  "note": "Reference ORC fluid"},
+      "R152a":      {"Tc_C": 113.3, "GWP": 124,  "class": "HFC",  "note": "Lower GWP alternative"}
+    }
+  },
+
+  "optimization": {
+    "n_samples": 600,
+    "seed": 42,
+    "dT_he_cs_gl": 10.0,
+    "dT_hp_ev_pp": 5.0,
+    "dT_hp_cd_pp": 3.0,
+    "dT_he_ev_pp": 3.0,
+    "dT_he_cd_pp": 5.0,
+    "dT_he_cd_sc": 3.0,
+    "p_st_ht": 250000.0,
+    "p_st_lt": 250000.0,
+    "epsilon_hp": 0.80,
+    "epsilon_he": 0.80,
+    "fluid_st": "H2O",
+    "version": "thermodynamic_full"
+  }
+}

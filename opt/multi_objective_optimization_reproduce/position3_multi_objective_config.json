@@ -1,0 +1,317 @@
+{
+  "multi_objective_optimization": {
+    "description": "卡诺电池多目标优化配置 - position3 (t_hs=60°C, t_cs=15°C)",
+    "author": "CBSim Optimization Team",
+    "version": "1.0",
+    "date": "2025-12-06",
+    "position_id": "position3",
+    "position_name": "位置3 (t_hs=60°C, t_cs=15°C, ΔT_hs-cs=45K)"
+  },
+  "optimization_objectives": {
+    "primary_objectives": [
+      {
+        "name": "cb_efficiency",
+        "description": "卡诺电池电效率",
+        "type": "maximize",
+        "weight": 1.0,
+        "bounds": [
+          0.0,
+          1.0
+        ],
+        "importance": "high"
+      },
+      {
+        "name": "E_dens_th",
+        "description": "热储能密度",
+        "type": "maximize",
+        "weight": 0.8,
+        "unit": "J_th/m³",
+        "bounds": [
+          0.0,
+          1000000000.0
+        ],
+        "importance": "medium"
+      },
+      {
+        "name": "eta_cb_exer",
+        "description": "㶲效率",
+        "type": "maximize",
+        "weight": 0.6,
+        "bounds": [
+          0.0,
+          1.0
+        ],
+        "importance": "medium"
+      }
+    ],
+    "secondary_objectives": [
+      {
+        "name": "hp_cop",
+        "description": "热泵COP",
+        "type": "maximize",
+        "weight": 0.3,
+        "bounds": [
+          0.0,
+          10.0
+        ]
+      },
+      {
+        "name": "he_efficiency",
+        "description": "热机效率",
+        "type": "maximize",
+        "weight": 0.3,
+        "bounds": [
+          0.0,
+          1.0
+        ]
+      }
+    ]
+  },
+  "design_variables": {
+    "continuous_variables": {
+      "dT_hp_cs_gl": {
+        "type": "continuous",
+        "bounds": [
+          0.0,
+          100.0
+        ],
+        "description": "热源温度滑移 ΔT_hs,gl (K)"
+      },
+      "dT_hp_ev_sh": {
+        "type": "continuous",
+        "bounds": [
+          3.0,
+          20.0
+        ],
+        "description": "热泵蒸气过热度 ΔT_hp,sh (K)"
+      },
+      "dT_he_ev_sh": {
+        "type": "continuous",
+        "bounds": [
+          3.0,
+          20.0
+        ],
+        "description": "ORC蒸气过热度 ΔT_orc,sh (K)"
+      },
+      "dT_hp_cd_sc": {
+        "type": "continuous",
+        "bounds": [
+          3.0,
+          50.0
+        ],
+        "description": "热泵液体过冷度 ΔT_hp,sc (K)"
+      },
+      "T_st_ht": {
+        "type": "continuous",
+        "bounds": [
+          50.0,
+          150.0
+        ],
+        "description": "热罐存储温度 t_st,ht (°C)"
+      },
+      "dT_st_sp": {
+        "type": "continuous",
+        "bounds": [
+          5.0,
+          100.0
+        ],
+        "description": "存储温度扩散 ΔT_st,sp (K)"
+      },
+      "eta_max_cp": {
+        "type": "continuous",
+        "bounds": [
+          0.7,
+          0.8
+        ],
+        "description": "压缩机等熵效率 η_is,comp"
+      },
+      "eta_max_ex": {
+        "type": "continuous",
+        "bounds": [
+          0.7,
+          0.8
+        ],
+        "description": "膨胀机等熵效率 η_is,exp"
+      },
+      "eta_pm": {
+        "type": "continuous",
+        "bounds": [
+          0.45,
+          0.55
+        ],
+        "description": "泵等熵效率 η_is,pmp"
+      }
+    },
+    "discrete_variables": {
+      "fluid_hp_idx": {
+        "type": "integer",
+        "bounds": [
+          0,
+          33
+        ],
+        "description": "热泵工作流体索引 (0-33 对应34种流体)"
+      },
+      "fluid_he_idx": {
+        "type": "integer",
+        "bounds": [
+          0,
+          33
+        ],
+        "description": "ORC工作流体索引 (0-33 对应34种流体)"
+      }
+    }
+  },
+  "operating_conditions": {
+    "fixed_parameters": {
+      "T_hp_cs": 60.0,
+      "T_he_cs": 15.0,
+      "dT_he_cs_gl": 10.0,
+      "dT_he_cd_sc": 3.0,
+      "dT_hp_ev_pp": 3.0,
+      "dT_hp_cd_pp": 3.0,
+      "dT_he_ev_pp": 3.0,
+      "dT_he_cd_pp": 3.0,
+      "fluid_st": "H2O",
+      "fluid_hp_cs": "H2O",
+      "fluid_he_cs": "H2O",
+      "p_st": 7.5
+    }
+  },
+  "optimization_algorithm": {
+    "name": "NSGA-II",
+    "description": "非支配排序遗传算法II",
+    "parameters": {
+      "population_size": 100,
+      "max_generations": 200,
+      "crossover_probability": 0.9,
+      "mutation_probability": 0.1,
+      "crossover_distribution_index": 20,
+      "mutation_distribution_index": 20
+    },
+    "convergence_criteria": {
+      "max_stagnation_generations": 50,
+      "tolerance": 1e-06,
+      "hypervolume_threshold": 0.95
+    }
+  },
+  "constraints": {
+    "thermodynamic_constraints": [
+      {
+        "name": "temperature_approach",
+        "description": "最小夹点温度",
+        "condition": "dT_hp_ev_pp >= 2.5 and dT_hp_cd_pp >= 2.5 and dT_he_ev_pp >= 2.5 and dT_he_cd_pp >= 2.5",
+        "penalty": 1000000.0
+      },
+      {
+        "name": "superheat_limits",
+        "description": "过热度限制",
+        "condition": "dT_hp_ev_sh >= 3.0 and dT_he_ev_sh >= 3.0",
+        "penalty": 1000000.0
+      },
+      {
+        "name": "subcooling_limits",
+        "description": "过冷度限制",
+        "condition": "dT_hp_cd_sc >= 3.0 and dT_he_cd_sc >= 3.0",
+        "penalty": 1000000.0
+      },
+      {
+        "name": "storage_temperature_consistency",
+        "description": "存储温度一致性",
+        "condition": "T_st_ht - dT_st_sp >= T_hp_cs - dT_hp_cs_gl",
+        "penalty": 1000000.0
+      },
+      {
+        "name": "minimum_HP_temperature_rise",
+        "description": "最小热泵温升",
+        "condition": "T_st_ht - (T_hp_cs - dT_hp_cs_gl) >= 5.0",
+        "penalty": 1000000.0
+      },
+      {
+        "name": "minimum_ORC_temperature_drop",
+        "description": "最小ORC温降",
+        "condition": "(T_st_ht - dT_st_sp) - T_he_cs >= 5.0",
+        "penalty": 1000000.0
+      }
+    ],
+    "performance_constraints": [
+      {
+        "name": "minimum_efficiency",
+        "description": "最小效率要求",
+        "condition": "cb_efficiency >= 0.1",
+        "penalty": 1000000.0
+      },
+      {
+        "name": "minimum_energy_density",
+        "description": "最小储能密度",
+        "condition": "E_dens_th >= 1e7",
+        "penalty": 1000000.0
+      }
+    ]
+  },
+  "evaluation_settings": {
+    "parallel_processing": {
+      "enabled": true,
+      "n_jobs": 4,
+      "backend": "multiprocessing"
+    },
+    "model_evaluation": {
+      "timeout": 300,
+      "max_retries": 3,
+      "fallback_values": {
+        "cb_efficiency": 0.0,
+        "E_dens_th": 0.0,
+        "eta_cb_exer": 0.0
+      }
+    }
+  },
+  "output_settings": {
+    "results_directory": "position3_multi_objective_results",
+    "save_format": [
+      "csv",
+      "json",
+      "pickle"
+    ],
+    "visualization": {
+      "pareto_front": true,
+      "convergence_plots": true,
+      "parallel_coordinates": true,
+      "radar_charts": true
+    },
+    "performance_metrics": {
+      "hypervolume": true,
+      "spacing": true,
+      "generational_distance": true,
+      "inverted_generational_distance": true
+    },
+    "report_generation": {
+      "summary_report": true,
+      "detailed_analysis": true,
+      "comparison_with_single_objective": true
+    }
+  },
+  "post_processing": {
+    "decision_making": {
+      "methods": [
+        "TOPSIS",
+        "weighted_sum",
+        "compromise_programming"
+      ],
+      "criteria_weights": {
+        "cb_efficiency": 0.5,
+        "E_dens_th": 0.3,
+        "eta_cb_exer": 0.2
+      }
+    },
+    "sensitivity_analysis": {
+      "enabled": true,
+      "parameters": [
+        "T_st_ht",
+        "dT_hp_cs_gl",
+        "dT_st_sp",
+        "eta_max_cp",
+        "eta_max_ex"
+      ],
+      "variation_range": "±10%"
+    }
+  }
+}

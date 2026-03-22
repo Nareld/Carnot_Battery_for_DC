@@ -1,0 +1,257 @@
+2026-03-18 10:40:30,055 [INFO] ====================================================================
+2026-03-18 10:40:30,055 [INFO]   Carnot Battery Pareto Frontier Scan
+2026-03-18 10:40:30,055 [INFO]   2026-03-18 10:40:30
+2026-03-18 10:40:30,055 [INFO] ====================================================================
+2026-03-18 10:40:30,055 [INFO] Config: n_samples=500, seed=42
+2026-03-18 10:40:30,055 [INFO] 
+=================================================================
+2026-03-18 10:40:30,055 [INFO]   Position 1 | n_samples=500 × 6 combos
+2026-03-18 10:40:30,055 [INFO]   T_hs=15°C, T_cs=15°C (ΔT=0 K)
+2026-03-18 10:40:30,055 [INFO]   T_st_ht: [40, 120] °C
+2026-03-18 10:40:30,055 [INFO]   Fluid combos: [('R1233zd(E)', 'R1234ze(E)'), ('R1233zd(E)', 'R227ea'), ('R1233zd(E)', 'R134a'), ('R245fa', 'R1234ze(E)'), ('R245fa', 'R227ea'), ('R245fa', 'R134a')]
+2026-03-18 10:40:30,055 [INFO] =================================================================
+2026-03-18 10:40:38,885 [INFO]   R1233zd(E)      + R1234ze(E)     : 146/500 valid
+2026-03-18 10:40:50,017 [INFO]   R1233zd(E)      + R227ea         : 141/500 valid
+2026-03-18 10:40:59,548 [INFO]   R1233zd(E)      + R134a          : 120/500 valid
+2026-03-18 10:41:08,149 [INFO]   R245fa          + R1234ze(E)     : 149/500 valid
+2026-03-18 10:41:19,162 [INFO]   R245fa          + R227ea         : 144/500 valid
+2026-03-18 10:41:30,515 [INFO]   R245fa          + R134a          : 123/500 valid
+2026-03-18 10:41:30,516 [INFO]   Total: 3000 evals, 823 valid (27.4%), 2177 errors, 60.5s
+2026-03-18 10:41:30,601 [INFO]   Pareto front: 7 solutions (from 823 valid)
+2026-03-18 10:41:30,610 [INFO]   Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/results/position1_pareto.csv
+2026-03-18 10:41:30,610 [INFO] 
+=================================================================
+2026-03-18 10:41:30,611 [INFO]   Position 2 | n_samples=500 × 5 combos
+2026-03-18 10:41:30,611 [INFO]   T_hs=40°C, T_cs=30°C (ΔT=10 K)
+2026-03-18 10:41:30,611 [INFO]   T_st_ht: [55, 130] °C
+2026-03-18 10:41:30,611 [INFO]   Fluid combos: [('R1233zd(E)', 'R1234ze(E)'), ('R1233zd(E)', 'R227ea'), ('R1233zd(E)', 'R134a'), ('R245fa', 'R1234ze(E)'), ('R245fa', 'R227ea')]
+2026-03-18 10:41:30,611 [INFO] =================================================================
+2026-03-18 10:41:41,007 [INFO]   R1233zd(E)      + R1234ze(E)     : 116/500 valid
+2026-03-18 10:41:57,375 [INFO]   R1233zd(E)      + R227ea         : 102/500 valid
+2026-03-18 10:42:09,364 [INFO]   R1233zd(E)      + R134a          : 73/500 valid
+2026-03-18 10:42:20,127 [INFO]   R245fa          + R1234ze(E)     : 116/500 valid
+2026-03-18 10:42:36,169 [INFO]   R245fa          + R227ea         : 103/500 valid
+2026-03-18 10:42:36,170 [INFO]   Total: 2500 evals, 510 valid (20.4%), 1990 errors, 65.6s
+2026-03-18 10:42:36,219 [INFO]   Pareto front: 8 solutions (from 510 valid)
+2026-03-18 10:42:36,229 [INFO]   Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/results/position2_pareto.csv
+2026-03-18 10:42:36,229 [INFO] 
+=================================================================
+2026-03-18 10:42:36,229 [INFO]   Position 3 | n_samples=500 × 5 combos
+2026-03-18 10:42:36,229 [INFO]   T_hs=60°C, T_cs=15°C (ΔT=45 K)
+2026-03-18 10:42:36,230 [INFO]   T_st_ht: [75, 130] °C
+2026-03-18 10:42:36,230 [INFO]   Fluid combos: [('R1233zd(E)', 'R1234ze(E)'), ('R1233zd(E)', 'R227ea'), ('R1233zd(E)', 'R134a'), ('R245fa', 'R1234ze(E)'), ('R245fa', 'R227ea')]
+2026-03-18 10:42:36,230 [INFO] =================================================================
+2026-03-18 10:42:44,631 [INFO]   R1233zd(E)      + R1234ze(E)     : 225/500 valid
+2026-03-18 10:42:55,183 [INFO]   R1233zd(E)      + R227ea         : 188/500 valid
+2026-03-18 10:43:04,032 [INFO]   R1233zd(E)      + R134a          : 145/500 valid
+2026-03-18 10:43:10,809 [INFO]   R245fa          + R1234ze(E)     : 218/500 valid
+2026-03-18 10:43:21,588 [INFO]   R245fa          + R227ea         : 182/500 valid
+2026-03-18 10:43:21,588 [INFO]   Total: 2500 evals, 958 valid (38.3%), 1542 errors, 45.4s
+2026-03-18 10:43:21,693 [INFO]   Pareto front: 36 solutions (from 958 valid)
+2026-03-18 10:43:21,697 [INFO]   Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/results/position3_pareto.csv
+2026-03-18 10:43:21,697 [INFO] 
+=================================================================
+2026-03-18 10:43:21,697 [INFO]   Position 4 | n_samples=500 × 5 combos
+2026-03-18 10:43:21,697 [INFO]   T_hs=100°C, T_cs=15°C (ΔT=85 K)
+2026-03-18 10:43:21,697 [INFO]   T_st_ht: [110, 120] °C
+2026-03-18 10:43:21,697 [INFO]   Fluid combos: [('R1233zd(E)', 'R1234ze(E)'), ('R1233zd(E)', 'R227ea'), ('R1233zd(E)', 'R134a'), ('R245fa', 'R1234ze(E)'), ('R245fa', 'R227ea')]
+2026-03-18 10:43:21,697 [INFO] =================================================================
+2026-03-18 10:43:25,782 [INFO]   R1233zd(E)      + R1234ze(E)     : 36/500 valid
+2026-03-18 10:43:32,787 [INFO]   R1233zd(E)      + R227ea         : 12/500 valid
+2026-03-18 10:43:40,678 [INFO]   R1233zd(E)      + R134a          : 0/500 valid
+2026-03-18 10:43:44,736 [INFO]   R245fa          + R1234ze(E)     : 36/500 valid
+2026-03-18 10:43:51,408 [INFO]   R245fa          + R227ea         : 11/500 valid
+2026-03-18 10:43:51,408 [INFO]   Total: 2500 evals, 95 valid (3.8%), 2405 errors, 29.7s
+2026-03-18 10:43:51,413 [INFO]   Pareto front: 6 solutions (from 95 valid)
+2026-03-18 10:43:51,414 [INFO]   Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/results/position4_pareto.csv
+2026-03-18 10:43:51,414 [INFO] 
+====================================================================
+2026-03-18 10:43:51,414 [INFO]   OPTIMIZATION SUMMARY
+2026-03-18 10:43:51,414 [INFO] ====================================================================
+2026-03-18 10:43:51,421 [INFO] 
+Position 1 (T_hs=15°C, T_cs=15°C (ΔT=0 K))
+2026-03-18 10:43:51,421 [INFO]   Pareto solutions: 7
+2026-03-18 10:43:51,421 [INFO]   η_P2P:  [6.49%, 21.76%]
+2026-03-18 10:43:51,422 [INFO]   E_th:   [29.77, 39.44] kWh/m³
+2026-03-18 10:43:51,422 [INFO]   η_II:   [6.49%, 21.76%]
+2026-03-18 10:43:51,422 [INFO]   Top HP fluid: R1233zd(E)
+2026-03-18 10:43:51,422 [INFO]   Top HE fluid: R227ea
+2026-03-18 10:43:51,422 [INFO] 
+Position 2 (T_hs=40°C, T_cs=30°C (ΔT=10 K))
+2026-03-18 10:43:51,422 [INFO]   Pareto solutions: 8
+2026-03-18 10:43:51,422 [INFO]   η_P2P:  [7.12%, 19.57%]
+2026-03-18 10:43:51,422 [INFO]   E_th:   [22.98, 39.08] kWh/m³
+2026-03-18 10:43:51,422 [INFO]   η_II:   [5.90%, 18.98%]
+2026-03-18 10:43:51,422 [INFO]   Top HP fluid: R1233zd(E)
+2026-03-18 10:43:51,422 [INFO]   Top HE fluid: R227ea
+2026-03-18 10:43:51,423 [INFO] 
+Position 3 (T_hs=60°C, T_cs=15°C (ΔT=45 K))
+2026-03-18 10:43:51,423 [INFO]   Pareto solutions: 36
+2026-03-18 10:43:51,423 [INFO]   η_P2P:  [4.82%, 44.02%]
+2026-03-18 10:43:51,423 [INFO]   E_th:   [11.82, 39.20] kWh/m³
+2026-03-18 10:43:51,423 [INFO]   η_II:   [2.51%, 22.46%]
+2026-03-18 10:43:51,423 [INFO]   Top HP fluid: R1233zd(E)
+2026-03-18 10:43:51,423 [INFO]   Top HE fluid: R227ea
+2026-03-18 10:43:51,424 [INFO] 
+Position 4 (T_hs=100°C, T_cs=15°C (ΔT=85 K))
+2026-03-18 10:43:51,424 [INFO]   Pareto solutions: 6
+2026-03-18 10:43:51,424 [INFO]   η_P2P:  [76.90%, 99.77%]
+2026-03-18 10:43:51,424 [INFO]   E_th:   [16.33, 22.50] kWh/m³
+2026-03-18 10:43:51,424 [INFO]   η_II:   [25.46%, 30.68%]
+2026-03-18 10:43:51,424 [INFO]   Top HP fluid: R1233zd(E)
+2026-03-18 10:43:51,424 [INFO]   Top HE fluid: R1234ze(E)
+2026-03-18 10:43:51,425 [INFO] 
+Generating plots...
+2026-03-18 10:43:52,722 [INFO] Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/figs/pareto_frontier_main.png
+2026-03-18 10:43:52,971 [INFO] Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/figs/pareto_fluid_distribution.png
+2026-03-18 10:43:53,158 [INFO] Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/figs/pareto_conflict_analysis.png
+2026-03-18 10:43:53,760 [INFO] Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/figs/pareto_design_space.png
+2026-03-18 10:43:53,953 [INFO] Saved: /Users/a1234/Downloads/CBSim_clean/simulation_notes/figs/pareto_temperature_effect.png
+2026-03-18 10:43:53,955 [INFO] 
+Saved combined CSV: /Users/a1234/Downloads/CBSim_clean/simulation_notes/results/all_positions_pareto.csv
+2026-03-18 10:43:53,955 [INFO] Total Pareto solutions: 57
+2026-03-18 10:43:53,955 [INFO] 
+Scan complete: 2026-03-18 10:43:53
+2026-03-19 11:11:27,847 [INFO] ====================================================================
+2026-03-19 11:11:27,848 [INFO]   Carnot Battery Pareto Frontier Scan
+2026-03-19 11:11:27,848 [INFO]   2026-03-19 11:11:27
+2026-03-19 11:11:27,848 [INFO] ====================================================================
+2026-03-19 11:11:27,848 [INFO] Config: n_samples=500, seed=42
+2026-03-19 11:11:27,848 [INFO] 
+=================================================================
+2026-03-19 11:11:27,848 [INFO]   Position 1 | n_samples=500 × 6 combos
+2026-03-19 11:11:27,848 [INFO]   T_hs=15°C, T_cs=15°C (ΔT=0 K)
+2026-03-19 11:11:27,848 [INFO]   T_st_ht: [40, 120] °C
+2026-03-19 11:11:27,848 [INFO]   Fluid combos: [('R1233zd(E)', 'R1234ze(E)'), ('R1233zd(E)', 'R227ea'), ('R1233zd(E)', 'R134a'), ('R245fa', 'R1234ze(E)'), ('R245fa', 'R227ea'), ('R245fa', 'R134a')]
+2026-03-19 11:11:27,848 [INFO] =================================================================
+2026-03-19 11:11:36,111 [INFO]   R1233zd(E)      + R1234ze(E)     : 148/500 valid
+2026-03-19 11:11:45,250 [INFO]   R1233zd(E)      + R227ea         : 139/500 valid
+2026-03-19 11:11:55,151 [INFO]   R1233zd(E)      + R134a          : 120/500 valid
+2026-03-19 11:12:03,119 [INFO]   R245fa          + R1234ze(E)     : 146/500 valid
+2026-03-19 11:12:11,788 [INFO]   R245fa          + R227ea         : 137/500 valid
+2026-03-19 11:12:21,635 [INFO]   R245fa          + R134a          : 118/500 valid
+2026-03-19 11:12:21,635 [INFO]   Total: 3000 evals, 808 valid (26.9%), 2192 errors, 53.8s
+2026-03-19 11:12:21,677 [INFO]   Pareto front: 8 solutions (from 808 valid)
+2026-03-19 11:12:21,680 [INFO]   Saved: /home/oxford/CBSim_of_DC/simulation_notes/results/position1_pareto.csv
+2026-03-19 11:12:21,680 [INFO] 
+=================================================================
+2026-03-19 11:12:21,680 [INFO]   Position 2 | n_samples=500 × 5 combos
+2026-03-19 11:12:21,680 [INFO]   T_hs=40°C, T_cs=30°C (ΔT=10 K)
+2026-03-19 11:12:21,680 [INFO]   T_st_ht: [55, 130] °C
+2026-03-19 11:12:21,680 [INFO]   Fluid combos: [('R1233zd(E)', 'R1234ze(E)'), ('R1233zd(E)', 'R227ea'), ('R1233zd(E)', 'R134a'), ('R245fa', 'R1234ze(E)'), ('R245fa', 'R227ea')]
+2026-03-19 11:12:21,680 [INFO] =================================================================
+2026-03-19 11:12:33,052 [INFO]   R1233zd(E)      + R1234ze(E)     : 116/500 valid
+2026-03-19 11:12:40,107 [INFO] ====================================================================
+2026-03-19 11:12:40,107 [INFO]   Carnot Battery Pareto Frontier Scan
+2026-03-19 11:12:40,107 [INFO]   2026-03-19 11:12:40
+2026-03-19 11:12:40,107 [INFO] ====================================================================
+2026-03-19 11:12:40,107 [INFO] Config: n_samples=500, seed=42
+2026-03-19 11:12:40,107 [INFO] 
+=================================================================
+2026-03-19 11:12:40,107 [INFO]   Position 1 | n_samples=500 × 6 combos
+2026-03-19 11:12:40,107 [INFO]   T_hs=15°C, T_cs=15°C (ΔT=0 K)
+2026-03-19 11:12:40,107 [INFO]   T_st_ht: [40, 120] °C
+2026-03-19 11:12:40,107 [INFO]   Fluid combos: [('R1233zd(E)', 'R1234ze(E)'), ('R1233zd(E)', 'R227ea'), ('R1233zd(E)', 'R134a'), ('R245fa', 'R1234ze(E)'), ('R245fa', 'R227ea'), ('R245fa', 'R134a')]
+2026-03-19 11:12:40,107 [INFO] =================================================================
+2026-03-19 11:12:46,899 [INFO]   R1233zd(E)      + R1234ze(E)     : 148/500 valid
+2026-03-19 11:12:57,943 [INFO]   R1233zd(E)      + R227ea         : 139/500 valid
+2026-03-19 11:13:07,748 [INFO]   R1233zd(E)      + R134a          : 120/500 valid
+2026-03-19 11:13:13,938 [INFO]   R245fa          + R1234ze(E)     : 146/500 valid
+2026-03-19 11:13:24,977 [INFO]   R245fa          + R227ea         : 137/500 valid
+2026-03-19 11:13:34,940 [INFO]   R245fa          + R134a          : 118/500 valid
+2026-03-19 11:13:34,940 [INFO]   Total: 3000 evals, 808 valid (26.9%), 2192 errors, 54.8s
+2026-03-19 11:13:34,977 [INFO]   Pareto front: 8 solutions (from 808 valid)
+2026-03-19 11:13:34,978 [INFO]   Saved: /home/oxford/CBSim_of_DC/simulation_notes/results/position1_pareto.csv
+2026-03-19 11:13:34,978 [INFO] 
+=================================================================
+2026-03-19 11:13:34,978 [INFO]   Position 2 | n_samples=500 × 5 combos
+2026-03-19 11:13:34,978 [INFO]   T_hs=40°C, T_cs=30°C (ΔT=10 K)
+2026-03-19 11:13:34,978 [INFO]   T_st_ht: [55, 130] °C
+2026-03-19 11:13:34,978 [INFO]   Fluid combos: [('R1233zd(E)', 'R1234ze(E)'), ('R1233zd(E)', 'R227ea'), ('R1233zd(E)', 'R134a'), ('R245fa', 'R1234ze(E)'), ('R245fa', 'R227ea')]
+2026-03-19 11:13:34,978 [INFO] =================================================================
+2026-03-19 11:13:43,453 [INFO]   R1233zd(E)      + R1234ze(E)     : 116/500 valid
+2026-03-19 11:14:00,653 [INFO]   R1233zd(E)      + R227ea         : 100/500 valid
+2026-03-19 11:14:12,579 [INFO]   R1233zd(E)      + R134a          : 71/500 valid
+2026-03-19 11:14:20,759 [INFO]   R245fa          + R1234ze(E)     : 116/500 valid
+2026-03-19 11:14:37,185 [INFO]   R245fa          + R227ea         : 101/500 valid
+2026-03-19 11:14:37,185 [INFO]   Total: 2500 evals, 504 valid (20.2%), 1996 errors, 62.2s
+2026-03-19 11:14:37,213 [INFO]   Pareto front: 7 solutions (from 504 valid)
+2026-03-19 11:14:37,215 [INFO]   Saved: /home/oxford/CBSim_of_DC/simulation_notes/results/position2_pareto.csv
+2026-03-19 11:14:37,215 [INFO] 
+=================================================================
+2026-03-19 11:14:37,215 [INFO]   Position 3 | n_samples=500 × 5 combos
+2026-03-19 11:14:37,215 [INFO]   T_hs=60°C, T_cs=15°C (ΔT=45 K)
+2026-03-19 11:14:37,215 [INFO]   T_st_ht: [75, 130] °C
+2026-03-19 11:14:37,215 [INFO]   Fluid combos: [('R1233zd(E)', 'R1234ze(E)'), ('R1233zd(E)', 'R227ea'), ('R1233zd(E)', 'R134a'), ('R245fa', 'R1234ze(E)'), ('R245fa', 'R227ea')]
+2026-03-19 11:14:37,215 [INFO] =================================================================
+2026-03-19 11:14:42,554 [INFO]   R1233zd(E)      + R1234ze(E)     : 227/500 valid
+2026-03-19 11:14:51,245 [INFO]   R1233zd(E)      + R227ea         : 191/500 valid
+2026-03-19 11:14:59,879 [INFO]   R1233zd(E)      + R134a          : 143/500 valid
+2026-03-19 11:15:05,304 [INFO]   R245fa          + R1234ze(E)     : 221/500 valid
+2026-03-19 11:15:14,391 [INFO]   R245fa          + R227ea         : 185/500 valid
+2026-03-19 11:15:14,391 [INFO]   Total: 2500 evals, 967 valid (38.7%), 1533 errors, 37.2s
+2026-03-19 11:15:14,510 [INFO]   Pareto front: 39 solutions (from 967 valid)
+2026-03-19 11:15:14,511 [INFO]   Saved: /home/oxford/CBSim_of_DC/simulation_notes/results/position3_pareto.csv
+2026-03-19 11:15:14,512 [INFO] 
+=================================================================
+2026-03-19 11:15:14,512 [INFO]   Position 4 | n_samples=500 × 5 combos
+2026-03-19 11:15:14,512 [INFO]   T_hs=100°C, T_cs=15°C (ΔT=85 K)
+2026-03-19 11:15:14,512 [INFO]   T_st_ht: [110, 120] °C
+2026-03-19 11:15:14,512 [INFO]   Fluid combos: [('R1233zd(E)', 'R1234ze(E)'), ('R1233zd(E)', 'R227ea'), ('R1233zd(E)', 'R134a'), ('R245fa', 'R1234ze(E)'), ('R245fa', 'R227ea')]
+2026-03-19 11:15:14,512 [INFO] =================================================================
+2026-03-19 11:15:17,632 [INFO]   R1233zd(E)      + R1234ze(E)     : 37/500 valid
+2026-03-19 11:15:23,965 [INFO]   R1233zd(E)      + R227ea         : 10/500 valid
+2026-03-19 11:15:31,906 [INFO]   R1233zd(E)      + R134a          : 0/500 valid
+2026-03-19 11:15:35,094 [INFO]   R245fa          + R1234ze(E)     : 36/500 valid
+2026-03-19 11:15:41,721 [INFO]   R245fa          + R227ea         : 9/500 valid
+2026-03-19 11:15:41,722 [INFO]   Total: 2500 evals, 92 valid (3.7%), 2408 errors, 27.2s
+2026-03-19 11:15:41,726 [INFO]   Pareto front: 6 solutions (from 92 valid)
+2026-03-19 11:15:41,726 [INFO]   Saved: /home/oxford/CBSim_of_DC/simulation_notes/results/position4_pareto.csv
+2026-03-19 11:15:41,726 [INFO] 
+====================================================================
+2026-03-19 11:15:41,726 [INFO]   OPTIMIZATION SUMMARY
+2026-03-19 11:15:41,726 [INFO] ====================================================================
+2026-03-19 11:15:41,730 [INFO] 
+Position 1 (T_hs=15°C, T_cs=15°C (ΔT=0 K))
+2026-03-19 11:15:41,730 [INFO]   Pareto solutions: 8
+2026-03-19 11:15:41,731 [INFO]   η_P2P:  [6.49%, 21.76%]
+2026-03-19 11:15:41,731 [INFO]   E_th:   [29.77, 39.44] kWh/m³
+2026-03-19 11:15:41,731 [INFO]   η_II:   [6.49%, 21.76%]
+2026-03-19 11:15:41,732 [INFO]   Top HP fluid: R1233zd(E)
+2026-03-19 11:15:41,732 [INFO]   Top HE fluid: R227ea
+2026-03-19 11:15:41,733 [INFO] 
+Position 2 (T_hs=40°C, T_cs=30°C (ΔT=10 K))
+2026-03-19 11:15:41,733 [INFO]   Pareto solutions: 7
+2026-03-19 11:15:41,733 [INFO]   η_P2P:  [7.12%, 19.79%]
+2026-03-19 11:15:41,733 [INFO]   E_th:   [22.98, 39.08] kWh/m³
+2026-03-19 11:15:41,733 [INFO]   η_II:   [5.90%, 18.98%]
+2026-03-19 11:15:41,733 [INFO]   Top HP fluid: R1233zd(E)
+2026-03-19 11:15:41,733 [INFO]   Top HE fluid: R227ea
+2026-03-19 11:15:41,734 [INFO] 
+Position 3 (T_hs=60°C, T_cs=15°C (ΔT=45 K))
+2026-03-19 11:15:41,734 [INFO]   Pareto solutions: 39
+2026-03-19 11:15:41,734 [INFO]   η_P2P:  [4.82%, 44.02%]
+2026-03-19 11:15:41,734 [INFO]   E_th:   [11.82, 39.20] kWh/m³
+2026-03-19 11:15:41,734 [INFO]   η_II:   [2.51%, 22.46%]
+2026-03-19 11:15:41,734 [INFO]   Top HP fluid: R1233zd(E)
+2026-03-19 11:15:41,735 [INFO]   Top HE fluid: R227ea
+2026-03-19 11:15:41,735 [INFO] 
+Position 4 (T_hs=100°C, T_cs=15°C (ΔT=85 K))
+2026-03-19 11:15:41,735 [INFO]   Pareto solutions: 6
+2026-03-19 11:15:41,735 [INFO]   η_P2P:  [76.90%, 99.77%]
+2026-03-19 11:15:41,735 [INFO]   E_th:   [16.33, 22.50] kWh/m³
+2026-03-19 11:15:41,735 [INFO]   η_II:   [25.46%, 30.68%]
+2026-03-19 11:15:41,735 [INFO]   Top HP fluid: R1233zd(E)
+2026-03-19 11:15:41,736 [INFO]   Top HE fluid: R1234ze(E)
+2026-03-19 11:15:41,736 [INFO] 
+Generating plots...
+2026-03-19 11:15:42,548 [INFO] Saved: /home/oxford/CBSim_of_DC/simulation_notes/figs/pareto_frontier_main.png
+2026-03-19 11:15:43,033 [INFO] Saved: /home/oxford/CBSim_of_DC/simulation_notes/figs/pareto_fluid_distribution.png
+2026-03-19 11:15:43,397 [INFO] Saved: /home/oxford/CBSim_of_DC/simulation_notes/figs/pareto_conflict_analysis.png
+2026-03-19 11:15:44,541 [INFO] Saved: /home/oxford/CBSim_of_DC/simulation_notes/figs/pareto_design_space.png
+2026-03-19 11:15:44,973 [INFO] Saved: /home/oxford/CBSim_of_DC/simulation_notes/figs/pareto_temperature_effect.png
+2026-03-19 11:15:44,975 [INFO] 
+Saved combined CSV: /home/oxford/CBSim_of_DC/simulation_notes/results/all_positions_pareto.csv
+2026-03-19 11:15:44,975 [INFO] Total Pareto solutions: 60
+2026-03-19 11:15:44,975 [INFO] 
+Scan complete: 2026-03-19 11:15:44

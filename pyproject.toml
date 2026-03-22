@@ -1,0 +1,42 @@
+[project]
+name = "cbsim"
+version = "0.1.0"
+description = "Carnot Battery Simulator - CBSim with multi-objective optimization"
+requires-python = ">=3.11"
+dependencies = [
+    # Core thermodynamics
+    "CoolProp>=6.6.0",
+    # Scientific computing
+    # NOTE: scipy must be <=1.11.x due to CoolProp AbstractState API compatibility
+    # scipy>=1.12 changed how scalar arrays are handled in fsolve/least_squares
+    "numpy>=1.24.3,<2.0",
+    "scipy>=1.11.1,<1.12",
+    "pandas>=2.0.3",
+    # Optimization (RHEIA dependencies)
+    "deap==1.4.1",
+    "pyDOE>=0.3.8",
+    "sobolsequence>=0.2.1",
+    # Data storage
+    "h5py>=3.9.0",
+    # Visualization
+    "matplotlib>=3.7.2",
+    # Solar/weather (RHEIA dependency)
+    "pvlib>=0.10.2",
+    # Additional utilities
+    "seaborn>=0.12.0",
+    "tqdm>=4.65.0",
+]
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+dev-dependencies = [
+    "ipython>=8.0.0",
+    "jupyter>=1.0.0",
+]
+
+[tool.uv.sources]
+# RHEIA is installed as a local editable package
+# Run: uv pip install -e opt/RHEIA/ --no-deps

@@ -1,0 +1,112 @@
+{
+  "problem": {
+    "name": "CBSim_Position_position3",
+    "type": "multi-objective",
+    "objectives": 3,
+    "constraints": 0,
+    "variables": 11
+  },
+  "variables": [
+    {
+      "name": "dT_hp_cs_gl",
+      "type": "continuous",
+      "lower_bound": 0.0,
+      "upper_bound": 100.0
+    },
+    {
+      "name": "dT_hp_ev_sh",
+      "type": "continuous",
+      "lower_bound": 3.0,
+      "upper_bound": 20.0
+    },
+    {
+      "name": "dT_he_ev_sh",
+      "type": "continuous",
+      "lower_bound": 3.0,
+      "upper_bound": 20.0
+    },
+    {
+      "name": "dT_hp_cd_sc",
+      "type": "continuous",
+      "lower_bound": 3.0,
+      "upper_bound": 50.0
+    },
+    {
+      "name": "T_st_ht",
+      "type": "continuous",
+      "lower_bound": 50.0,
+      "upper_bound": 150.0
+    },
+    {
+      "name": "dT_st_sp",
+      "type": "continuous",
+      "lower_bound": 5.0,
+      "upper_bound": 100.0
+    },
+    {
+      "name": "fluid_hp_idx",
+      "type": "integer",
+      "lower_bound": 0,
+      "upper_bound": 33
+    },
+    {
+      "name": "fluid_he_idx",
+      "type": "integer",
+      "lower_bound": 0,
+      "upper_bound": 33
+    },
+    {
+      "name": "eta_max_cp",
+      "type": "continuous",
+      "lower_bound": 0.70,
+      "upper_bound": 0.80
+    },
+    {
+      "name": "eta_max_ex",
+      "type": "continuous",
+      "lower_bound": 0.70,
+      "upper_bound": 0.80
+    },
+    {
+      "name": "eta_pm",
+      "type": "continuous",
+      "lower_bound": 0.45,
+      "upper_bound": 0.55
+    }
+  ],
+  "algorithm": {
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 100,
+      "generations": 50,
+      "crossover_probability": 0.9,
+      "mutation_probability": 0.1,
+      "crossover_distribution_index": 20,
+      "mutation_distribution_index": 20,
+      "seed": 42
+    }
+  },
+  "sampling": {
+    "method": "LHS",
+    "samples": 100,
+    "seed": 42
+  },
+  "output": {
+    "directory": "results_position_position3",
+    "save_frequency": 10,
+    "verbose": true
+  },
+  "metadata": {
+    "position_id": "position3",
+    "position_name": "\u4f4d\u7f6e3 (t_hs=60\u00b0C, t_cs=15\u00b0C, \u0394T_hs-cs=45K)",
+    "description": "\u57fa\u4e8e\u6587\u7328\u4f18\u5316\u53c2\u6570\u7684position3\u914d\u7f6e\uff0c11\u4e2a\u8bbe\u8ba1\u53d8\u91cf",
+    "t_hs": 60.0,
+    "t_cs": 15.0,
+    "deltaT_hs_cs": 45.0,
+    "created": "2025-12-02 22:07:25",
+    "updated": "2025-12-06 22:09:00",
+    "variables_count": 11,
+    "variables_types": "9 continuous, 2 integer",
+    "optimization_based_on": "Extended mapping and systematic optimisation of the Carnot battery trilemma for sub-critical cycles"
+  }
+}

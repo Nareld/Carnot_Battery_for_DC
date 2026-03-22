@@ -1,0 +1,9 @@
+sphinxcontrib.bibtex
+sphinx_gallery
+sphinx_copybutton
+sphinx_rtd_theme
+matplotlib
+pandas
+numpy
+pvlib
+rheia

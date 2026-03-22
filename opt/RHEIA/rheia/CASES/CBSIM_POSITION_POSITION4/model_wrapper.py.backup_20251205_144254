@@ -1,0 +1,577 @@
+#!/usr/bin/env python3
+"""
+CBSim Model Wrapper for RHEIA Integration
+
+This module provides a wrapper for the CBSim thermal model to integrate
+with the RHEIA optimization framework.
+"""
+
+import sys
+import os
+import time
+import logging
+import CoolProp.CoolProp as CP
+
+# Add CBSim module path
+cbsim_src_path = '/home/oxford/CBSim/src'
+sys.path.insert(0, cbsim_src_path)
+
+# Import CBSim model
+try:
+    import _module_carnot_battery as CB
+except ImportError as e:
+    print(f"Warning: Could not import CBSim module: {e}")
+    print("Make sure the CBSim source code is available in the src directory")
+
+
+class CBSimModel:
+    """Wrapper class for CBSim thermal model"""
+
+    def __init__(self):
+        """Initialize the CBSim model wrapper"""
+        self.model = None
+        self.results = {}
+        self.parameters = {}
+
+        # Configure logging
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        self.logger = logging.getLogger(__name__)
+
+    def set_parameters(self, **kwargs):
+        """
+        Set model parameters with constraint checking
+
+        Args:
+            **kwargs: Model parameters
+        """
+        # 检查参数约束
+        if not self._check_parameter_constraints(kwargs):
+            self.logger.warning("Parameter constraints violated, using constrained values")
+            kwargs = self._apply_parameter_constraints(kwargs)
+
+        self.parameters.update(kwargs)
+
+    def _check_parameter_constraints(self, parameters):
+        """
+        Check parameter constraints
+
+        Args:
+            parameters: Parameter dictionary
+
+        Returns:
+            bool: True if all constraints are satisfied
+        """
+        constraints = {
+            # Design variables from literature (Table 1 and optimization settings)
+            'dT_hp_cs_gl': (0.0, 100.0),          # ΔT_hs,gl: 0-100 K (heat source glide)
+            'dT_hp_ev_sh': (3.0, 20.0),           # ΔT_hp,sh: 3-20 K (HP superheat)
+            'dT_he_ev_sh': (3.0, 20.0),           # ΔT_orc,sh: 3-20 K (ORC superheat)
+            'dT_hp_cd_sc': (3.0, 50.0),           # ΔT_hp,sc: 3-50 K (HP subcooling)
+            'T_st_ht': (50.0, 150.0),             # t_st,ht: 50-150 °C (hot storage temperature)
+            'dT_st_sp': (5.0, 100.0),             # ΔT_st,sp: 5-100 K (storage temperature spread)
+            # Fixed temperature ranges (hard constraints)
+            'T_hp_cs': (-25.0, 100.0),            # t_hs: -25 to 100 °C (heat source temperature)
+            'T_he_cs': (-25.0, 50.0),             # t_cs: -25 to 50 °C (heat sink temperature)
+            # Efficiency parameters (can be fixed or with small ranges)
+            'eta_max_cp': (0.70, 0.80),           # η_is,comp: 0.70-0.80 (compressor isentropic efficiency)
+            'eta_max_ex': (0.70, 0.80),           # η_is,exp: 0.70-0.80 (expander isentropic efficiency)
+            'eta_pm': (0.45, 0.55),               # η_is,pmp: 0.45-0.55 (pump isentropic efficiency)
+            # Pinch point temperatures (fixed at 3 K in literature, but keep range for flexibility)
+            'dT_hp_ev_pp': (2.5, 3.5),            # ΔT_pp for HP evaporator: fixed around 3 K
+            'dT_hp_cd_pp': (2.5, 3.5),            # ΔT_pp for HP condenser: fixed around 3 K
+            'dT_he_ev_pp': (2.5, 3.5),            # ΔT_pp for ORC evaporator: fixed around 3 K
+            'dT_he_cd_pp': (2.5, 3.5),            # ΔT_pp for ORC condenser: fixed around 3 K
+            # Fluid indices (if using integer encoding for 34 fluids from Table 2)
+            'fluid_hp_idx': (0, 33),              # Index for HP working fluid (0-33 mapping to CoolProp names)
+            'fluid_he_idx': (0, 33)               # Index for ORC working fluid (0-33 mapping to CoolProp names)
+        }
+
+        for param, (min_val, max_val) in constraints.items():
+            if param in parameters:
+                value = parameters[param]
+                if not (min_val <= value <= max_val):
+                    self.logger.warning(f"Parameter {param}={value} violates constraint [{min_val}, {max_val}]")
+                    return False
+
+        # Additional coupled constraints
+        # 1. t_st_lt = T_hp_cs - dT_hp_cs_gl ≥ -25°C (t_hs,min)
+        if 'T_hp_cs' in parameters and 'dT_hp_cs_gl' in parameters:
+            t_st_lt = parameters['T_hp_cs'] - parameters['dT_hp_cs_gl']
+            if t_st_lt < -25.0:
+                self.logger.warning(f"Coupled constraint violation: t_st_lt = {t_st_lt} < -25°C")
+                return False
+
+        # 2. t_st_lt = T_hp_cs - dT_hp_cs_gl ≥ T_st_ht - dT_st_sp (storage temperature consistency)
+        if all(key in parameters for key in ['T_hp_cs', 'dT_hp_cs_gl', 'T_st_ht', 'dT_st_sp']):
+            t_st_lt = parameters['T_hp_cs'] - parameters['dT_hp_cs_gl']
+            t_st_ht = parameters['T_st_ht']
+            dT_st_sp = parameters['dT_st_sp']
+            if t_st_lt > t_st_ht - dT_st_sp:
+                self.logger.warning(f"Coupled constraint violation: t_st_lt = {t_st_lt} > t_st_ht - dT_st_sp = {t_st_ht - dT_st_sp}")
+                return False
+
+        # 3. Minimum HP temperature rise: ΔT_hp_min = T_st_ht - (T_hp_cs - dT_hp_cs_gl) ≥ 5 K
+        if all(key in parameters for key in ['T_st_ht', 'T_hp_cs', 'dT_hp_cs_gl']):
+            delta_T_hp = parameters['T_st_ht'] - (parameters['T_hp_cs'] - parameters['dT_hp_cs_gl'])
+            if delta_T_hp < 5.0:
+                self.logger.warning(f"Coupled constraint violation: ΔT_hp = {delta_T_hp} < 5 K")
+                return False
+
+        # 4. Minimum ORC temperature drop: ΔT_orc_min = (T_st_ht - dT_st_sp) - T_he_cs ≥ 5 K
+        if all(key in parameters for key in ['T_st_ht', 'dT_st_sp', 'T_he_cs']):
+            delta_T_orc = (parameters['T_st_ht'] - parameters['dT_st_sp']) - parameters['T_he_cs']
+            if delta_T_orc < 5.0:
+                self.logger.warning(f"Coupled constraint violation: ΔT_orc = {delta_T_orc} < 5 K")
+                return False
+
+        return True
+
+    def _apply_parameter_constraints(self, parameters):
+        """
+        Apply parameter constraints by clamping values
+
+        Args:
+            parameters: Parameter dictionary
+
+        Returns:
+            dict: Constrained parameters
+        """
+        constraints = {
+            # Design variables from literature (Table 1 and optimization settings)
+            'dT_hp_cs_gl': (0.0, 100.0),          # ΔT_hs,gl: 0-100 K (heat source glide)
+            'dT_hp_ev_sh': (3.0, 20.0),           # ΔT_hp,sh: 3-20 K (HP superheat)
+            'dT_he_ev_sh': (3.0, 20.0),           # ΔT_orc,sh: 3-20 K (ORC superheat)
+            'dT_hp_cd_sc': (3.0, 50.0),           # ΔT_hp,sc: 3-50 K (HP subcooling)
+            'T_st_ht': (50.0, 150.0),             # t_st,ht: 50-150 °C (hot storage temperature)
+            'dT_st_sp': (5.0, 100.0),             # ΔT_st,sp: 5-100 K (storage temperature spread)
+            # Fixed temperature ranges (hard constraints)
+            'T_hp_cs': (-25.0, 100.0),            # t_hs: -25 to 100 °C (heat source temperature)
+            'T_he_cs': (-25.0, 50.0),             # t_cs: -25 to 50 °C (heat sink temperature)
+            # Efficiency parameters (can be fixed or with small ranges)
+            'eta_max_cp': (0.70, 0.80),           # η_is,comp: 0.70-0.80 (compressor isentropic efficiency)
+            'eta_max_ex': (0.70, 0.80),           # η_is,exp: 0.70-0.80 (expander isentropic efficiency)
+            'eta_pm': (0.45, 0.55),               # η_is,pmp: 0.45-0.55 (pump isentropic efficiency)
+            # Pinch point temperatures (fixed at 3 K in literature, but keep range for flexibility)
+            'dT_hp_ev_pp': (2.5, 3.5),            # ΔT_pp for HP evaporator: fixed around 3 K
+            'dT_hp_cd_pp': (2.5, 3.5),            # ΔT_pp for HP condenser: fixed around 3 K
+            'dT_he_ev_pp': (2.5, 3.5),            # ΔT_pp for ORC evaporator: fixed around 3 K
+            'dT_he_cd_pp': (2.5, 3.5),            # ΔT_pp for ORC condenser: fixed around 3 K
+            # Fluid indices (if using integer encoding for 34 fluids from Table 2)
+            'fluid_hp_idx': (0, 33),              # Index for HP working fluid (0-33 mapping to CoolProp names)
+            'fluid_he_idx': (0, 33)               # Index for ORC working fluid (0-33 mapping to CoolProp names)
+        }
+
+        constrained_params = parameters.copy()
+        for param, (min_val, max_val) in constraints.items():
+            if param in constrained_params:
+                value = constrained_params[param]
+                if value < min_val:
+                    constrained_params[param] = min_val
+                elif value > max_val:
+                    constrained_params[param] = max_val
+
+        # Apply coupled constraints by adjusting related parameters
+        # 1. Ensure t_st_lt = T_hp_cs - dT_hp_cs_gl ≥ -25°C (t_hs,min)
+        if 'T_hp_cs' in constrained_params and 'dT_hp_cs_gl' in constrained_params:
+            t_st_lt = constrained_params['T_hp_cs'] - constrained_params['dT_hp_cs_gl']
+            if t_st_lt < -25.0:
+                # Adjust dT_hp_cs_gl to satisfy constraint (reduce glide)
+                constrained_params['dT_hp_cs_gl'] = constrained_params['T_hp_cs'] + 25.0
+                # Clamp again to ensure within bounds
+                if constrained_params['dT_hp_cs_gl'] < 0.0:
+                    constrained_params['dT_hp_cs_gl'] = 0.0
+                if constrained_params['dT_hp_cs_gl'] > 100.0:
+                    # If still violated, adjust T_hp_cs (increase source temperature)
+                    constrained_params['T_hp_cs'] = constrained_params['dT_hp_cs_gl'] - 25.0
+                    # Clamp T_hp_cs to its bounds
+                    if constrained_params['T_hp_cs'] < -25.0:
+                        constrained_params['T_hp_cs'] = -25.0
+                    if constrained_params['T_hp_cs'] > 100.0:
+                        constrained_params['T_hp_cs'] = 100.0
+
+        # 2. Ensure storage temperature consistency: t_st_lt ≤ t_st_ht - dT_st_sp
+        if all(key in constrained_params for key in ['T_hp_cs', 'dT_hp_cs_gl', 'T_st_ht', 'dT_st_sp']):
+            t_st_lt = constrained_params['T_hp_cs'] - constrained_params['dT_hp_cs_gl']
+            t_st_ht = constrained_params['T_st_ht']
+            dT_st_sp = constrained_params['dT_st_sp']
+            if t_st_lt > t_st_ht - dT_st_sp:
+                # Adjust dT_st_sp to satisfy constraint (increase spread)
+                constrained_params['dT_st_sp'] = t_st_ht - t_st_lt
+                # Clamp to bounds
+                if constrained_params['dT_st_sp'] < 5.0:
+                    constrained_params['dT_st_sp'] = 5.0
+                if constrained_params['dT_st_sp'] > 100.0:
+                    constrained_params['dT_st_sp'] = 100.0
+
+        # 3. Ensure minimum HP temperature rise: ΔT_hp_min = T_st_ht - (T_hp_cs - dT_hp_cs_gl) ≥ 5 K
+        if all(key in constrained_params for key in ['T_st_ht', 'T_hp_cs', 'dT_hp_cs_gl']):
+            delta_T_hp = constrained_params['T_st_ht'] - (constrained_params['T_hp_cs'] - constrained_params['dT_hp_cs_gl'])
+            if delta_T_hp < 5.0:
+                # Adjust T_st_ht upward to satisfy constraint
+                constrained_params['T_st_ht'] = (constrained_params['T_hp_cs'] - constrained_params['dT_hp_cs_gl']) + 5.0
+                # Clamp to bounds
+                if constrained_params['T_st_ht'] < 50.0:
+                    constrained_params['T_st_ht'] = 50.0
+                if constrained_params['T_st_ht'] > 150.0:
+                    constrained_params['T_st_ht'] = 150.0
+
+        # 4. Ensure minimum ORC temperature drop: ΔT_orc_min = (T_st_ht - dT_st_sp) - T_he_cs ≥ 5 K
+        if all(key in constrained_params for key in ['T_st_ht', 'dT_st_sp', 'T_he_cs']):
+            delta_T_orc = (constrained_params['T_st_ht'] - constrained_params['dT_st_sp']) - constrained_params['T_he_cs']
+            if delta_T_orc < 5.0:
+                # Adjust T_he_cs downward to satisfy constraint
+                constrained_params['T_he_cs'] = (constrained_params['T_st_ht'] - constrained_params['dT_st_sp']) - 5.0
+                # Clamp to bounds
+                if constrained_params['T_he_cs'] < -25.0:
+                    constrained_params['T_he_cs'] = -25.0
+                if constrained_params['T_he_cs'] > 50.0:
+                    constrained_params['T_he_cs'] = 50.0
+
+        return constrained_params
+
+    def evaluate(self):
+        """
+        Run CBSim evaluation with constraint violation tracking
+
+        Returns:
+            dict: Evaluation results including constraint violations
+        """
+        try:
+            start_time = time.time()
+
+            # Build complete parameter dictionary
+            inputs = self._build_inputs()
+
+            # 准备热泵输入
+            p_hp_cs_su = 1e+5
+            T_hp_cs_su = inputs['T_hp_cs'] + 273.15
+            T_hp_cs_ex = T_hp_cs_su - inputs['dT_hp_cs_gl']
+            m_hp_cs = 1.0
+            i_hp_cs_su = CP.PropsSI('H', 'T', T_hp_cs_su, 'P', p_hp_cs_su, inputs['fluid_hp_cs'])
+            i_hp_cs_ex = CP.PropsSI('H', 'T', T_hp_cs_ex, 'P', p_hp_cs_su, inputs['fluid_hp_cs'])
+            P_hp = 1e+3
+
+            # 准备热机输入
+            p_he_cs_su = 1e+5
+            T_he_cs_su = inputs['T_he_cs'] + 273.15
+            T_he_cs_ex = T_he_cs_su + inputs['dT_he_cs_gl']
+            m_he_cs = 1.0
+            i_he_cs_su = CP.PropsSI('H', 'T', T_he_cs_su, 'P', p_he_cs_su, inputs['fluid_he_cs'])
+            i_he_cs_ex = CP.PropsSI('H', 'T', T_he_cs_ex, 'P', p_he_cs_su, inputs['fluid_he_cs'])
+            P_he = 1e+3
+
+            T_st_ht_k = inputs['T_st_ht'] + 273.15
+
+            # 完整参数字典
+            dp_hp_ev = 0.00e+5
+            dp_hp_cd = 0.00e+5
+            dp_he_ev = 0.00e+5
+            dp_he_cd = 0.00e+5
+            epsilon = 0.80
+
+            my_CB_params = {
+                'p_hp_cs_su': p_hp_cs_su,
+                'i_hp_cs_su': i_hp_cs_su,
+                'i_hp_cs_ex': i_hp_cs_ex,
+                'p_he_cs_su': p_he_cs_su,
+                'i_he_cs_su': i_he_cs_su,
+                'i_he_cs_ex': i_he_cs_ex,
+                'm_hp_cs': m_hp_cs,
+                'm_he_cs': m_he_cs,
+                'p_st_ht': 7.5e+5,  # Storage pressure fixed at 7.5 bar (750 kPa)
+                'p_st_lt': 7.5e+5,  # Same for low-temperature side
+                'T_st_ht': T_st_ht_k,
+                'dT_st_sp': inputs['dT_st_sp'],
+                'eta_max_cp': inputs['eta_max_cp'],
+                'eta_max_ex': inputs['eta_max_ex'],
+                'eta_pm': inputs['eta_pm'],
+                'dT_hp_ev_pp': inputs['dT_hp_ev_pp'],
+                'dT_hp_cd_pp': inputs['dT_hp_cd_pp'],
+                'dT_he_ev_pp': inputs['dT_he_ev_pp'],
+                'dT_he_cd_pp': inputs['dT_he_cd_pp'],
+                'dT_he_ev_sh': inputs['dT_he_ev_sh'],
+                'dT_hp_ev_sh': inputs['dT_hp_ev_sh'],
+                'dT_he_cd_sc': inputs['dT_he_cd_sc'],
+                'dT_hp_cd_sc': inputs['dT_hp_cd_sc'],
+                'dp_hp_ev': dp_hp_ev,
+                'dp_hp_cd': dp_hp_cd,
+                'dp_hp_rg_lq': (dp_hp_ev+dp_hp_cd)/2,
+                'dp_hp_rg_vp': (dp_hp_ev+dp_hp_cd)/2,
+                'epsilon_hp': epsilon,
+                'dp_he_ev': dp_he_ev,
+                'dp_he_cd': dp_he_cd,
+                'dp_he_rg_lq': (dp_he_ev+dp_he_cd)/2,
+                'dp_he_rg_vp': (dp_he_ev+dp_he_cd)/2,
+                'epsilon_he': epsilon,
+                'm_hp_st_max': 0e+0,
+                'm_he_st_max': 0e+0,
+                'version': inputs['version'],
+                'mode_hp': True,
+                'mode_he': True,
+                'mode': 'source',
+                'p_ref': p_he_cs_su,
+                'T_ref': T_he_cs_su,
+                'p_0': p_he_cs_su,
+                'T_0': T_he_cs_su,
+                'fluid_hp': inputs['fluid_hp'],
+                'fluid_he': inputs['fluid_he'],
+                'fluid_st': inputs['fluid_st'],
+                'wet_ex': 0,
+                'm_rat_hp': 0,
+                'm_rat_he': 0,
+            }
+
+            # 准备选项
+            print_flag, plot_flag = False, False
+            debug = False
+            exergy = True
+            options = {'plot_flag': plot_flag,
+                       'print_flag': print_flag,
+                       'debug': debug,
+                       'exergy': exergy}
+
+            # 准备输入元组
+            input_tuple = (p_hp_cs_su, i_hp_cs_su, p_hp_cs_su, i_hp_cs_ex, m_hp_cs, inputs['fluid_hp_cs'],
+                          p_he_cs_su, i_he_cs_su, p_he_cs_su, i_he_cs_ex, m_he_cs, inputs['fluid_he_cs'],
+                          P_hp, P_he)
+
+            # 运行仿真
+            self.model = CB.SRVCHP_SRORC_STES2T(input_tuple, my_CB_params, options)
+            self.model.evaluate()
+
+            # Extract performance metrics
+            self.results = self._extract_results(start_time)
+
+            self.logger.info(f"Evaluation successful - CB efficiency: {self.results['cb_efficiency']:.4f}")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Evaluation failed: {e}")
+            self.results = self._build_failure_results(e, start_time)
+            return False
+
+    def _build_inputs(self):
+        """Build complete input dictionary from parameters"""
+        # Fluid list from literature Table 2 (34 fluids)
+        # Placeholder list - should be replaced with actual 34 fluids from Table 2
+        fluid_list = [
+            'R1233zd(E)', 'R227ea', 'R1234ze(Z)', 'R1234yf', 'R134a',
+            'R152a', 'R245fa', 'R290', 'R600', 'R600a',
+            'R601', 'R601a', 'R123', 'R124', 'R125',
+            'R143a', 'R218', 'R236fa', 'R245ca', 'R32',
+            'R41', 'R407C', 'R410A', 'R507A', 'R717',
+            'R744', 'R718', 'R729', 'R764', 'R1150',
+            'R1270', 'R1311', 'R141b', 'R1132a'  # 34 fluids total
+        ]
+
+        # Get fluid indices and map to CoolProp names
+        fluid_hp_idx = int(self.parameters.get('fluid_hp_idx', 0))
+        fluid_he_idx = int(self.parameters.get('fluid_he_idx', 1))
+        fluid_hp = fluid_list[fluid_hp_idx % len(fluid_list)]
+        fluid_he = fluid_list[fluid_he_idx % len(fluid_list)]
+
+        inputs = {
+            # Design variables (with defaults from position4 typical values)
+            'T_hp_cs': self.parameters.get('T_hp_cs', 100.0),         # Heat source temperature (°C) - fixed at 100°C for position4
+            'T_he_cs': self.parameters.get('T_he_cs', 15.0),          # Heat sink temperature (°C) - fixed at 15°C for position4
+            'T_st_ht': self.parameters.get('T_st_ht', 120.0),         # Hot storage temperature (°C) - typical value
+            'dT_hp_cs_gl': self.parameters.get('dT_hp_cs_gl', 10.0),  # Heat source glide (K) - design variable
+            'dT_st_sp': self.parameters.get('dT_st_sp', 60.0),        # Storage temperature spread (K) - design variable
+            'dT_hp_ev_sh': self.parameters.get('dT_hp_ev_sh', 6.0),   # HP superheat (K) - design variable
+            'dT_he_ev_sh': self.parameters.get('dT_he_ev_sh', 5.0),   # ORC superheat (K) - design variable
+            'dT_hp_cd_sc': self.parameters.get('dT_hp_cd_sc', 30.0),  # HP subcooling (K) - design variable
+
+            # Fixed parameters from literature (Table 1)
+            'dT_he_cs_gl': 10.0,                                      # Heat sink glide fixed at 10 K
+            'dT_he_cd_sc': 3.0,                                       # ORC subcooling fixed at 3 K
+            'eta_max_cp': self.parameters.get('eta_max_cp', 0.75),    # Compressor isentropic efficiency
+            'eta_max_ex': self.parameters.get('eta_max_ex', 0.75),    # Expander isentropic efficiency
+            'eta_pm': 0.50,                                           # Pump isentropic efficiency fixed at 0.50
+            'dT_hp_ev_pp': 3.0,                                       # HP evaporator pinch point fixed at 3 K
+            'dT_hp_cd_pp': 3.0,                                       # HP condenser pinch point fixed at 3 K
+            'dT_he_ev_pp': 3.0,                                       # ORC evaporator pinch point fixed at 3 K
+            'dT_he_cd_pp': 3.0,                                       # ORC condenser pinch point fixed at 3 K
+
+            # Fluid selections (mapped from indices)
+            'fluid_hp': fluid_hp,                                     # HP working fluid from index
+            'fluid_he': fluid_he,                                     # ORC working fluid from index
+            'fluid_hp_cs': 'H2O',                                     # Heat source fluid (water)
+            'fluid_he_cs': 'H2O',                                     # Heat sink fluid (water)
+            'fluid_st': 'H2O',                                        # Storage fluid (water)
+
+            # Model configuration
+            'cb_type': 3,
+            'version': 'thermodynamic_full'
+        }
+        return inputs
+
+    def get_cb_efficiency(self):
+        """Get Carnot battery efficiency"""
+        return self.results.get('cb_efficiency', 0.0)
+
+    def get_hp_cop(self):
+        """Get heat pump COP"""
+        return self.results.get('hp_cop', 0.0)
+
+    def get_he_efficiency(self):
+        """Get heat engine efficiency"""
+        return self.results.get('he_efficiency', 0.0)
+
+    def get_multi_objective_values(self):
+        """
+        Get multi-objective values for DEAP optimization
+
+        Returns:
+            tuple: Three objective values (cb_efficiency, E_dens_th, eta_cb_exer)
+        """
+        # Get the three objective values according to config
+        cb_efficiency = self.results.get('cb_efficiency', 0.0)
+        E_dens_th = self.results.get('E_dens_th', 0.0)
+        eta_cb_exer = self.results.get('eta_cb_exer', 0.0)
+
+        # Debug logging - show what values are being returned
+        self.logger.info(f"DEBUG - Returning multi-objective values:")
+        self.logger.info(f"  cb_efficiency: {cb_efficiency:.6f}")
+        self.logger.info(f"  E_dens_th: {E_dens_th:.6f}")
+        self.logger.info(f"  eta_cb_exer: {eta_cb_exer:.6f}")
+
+        # 返回三个目标值的元组，符合DEAP格式要求
+        return (cb_efficiency, E_dens_th, eta_cb_exer)
+
+    def get_all_results(self):
+        """Get all performance results"""
+        return self.results.copy()
+
+    def _extract_results(self, start_time):
+        """
+        Extract performance metrics from CBSim model
+
+        Returns:
+            dict: Results including performance metrics
+        """
+        try:
+            results = {}
+
+            # Extract performance metrics from CBSim model
+            if self.model is not None:
+                # Carnot battery efficiency
+                cb_efficiency = getattr(self.model, 'eta_cb_elec', 0.0)
+                results['cb_efficiency'] = cb_efficiency
+
+                # Heat pump performance
+                hp_cop = getattr(self.model.my_HP, 'eta_hp_cyclen', 0.0)
+                results['hp_cop'] = hp_cop
+                results['hp_power'] = getattr(self.model, 'P_hp', 0.0)
+
+                # Heat engine performance
+                he_efficiency = getattr(self.model.my_HE, 'eta_he_cyclen', 0.0)
+                results['he_efficiency'] = he_efficiency
+                results['he_power'] = getattr(self.model, 'P_he', 0.0)
+
+                # Multi-objective optimization metrics
+                E_dens_th = getattr(self.model, 'E_dens_th', 0.0)
+                results['E_dens_th'] = E_dens_th
+                eta_cb_exer = getattr(self.model, 'eta_cb_exer', 0.0)
+                results['eta_cb_exer'] = eta_cb_exer
+
+                # Debug logging - show all three objective values
+                self.logger.info(f"DEBUG - Multi-objective values extracted:")
+                self.logger.info(f"  cb_efficiency: {cb_efficiency:.6f}")
+                self.logger.info(f"  E_dens_th: {E_dens_th:.6f}")
+                self.logger.info(f"  eta_cb_exer: {eta_cb_exer:.6f}")
+
+                # Also log the actual model attributes for debugging
+                self.logger.info(f"DEBUG - Model attributes:")
+                self.logger.info(f"  model.eta_cb_elec: {getattr(self.model, 'eta_cb_elec', 'NOT_FOUND')}")
+                self.logger.info(f"  model.E_dens_th: {getattr(self.model, 'E_dens_th', 'NOT_FOUND')}")
+                self.logger.info(f"  model.eta_cb_exer: {getattr(self.model, 'eta_cb_exer', 'NOT_FOUND')}")
+            else:
+                # Fallback values if model results not available
+                results['cb_efficiency'] = 0.0
+                results['hp_cop'] = 0.0
+                results['he_efficiency'] = 0.0
+                results['hp_power'] = 0.0
+                results['he_power'] = 0.0
+                results['E_dens_th'] = 0.0
+                results['eta_cb_exer'] = 0.0
+
+            # Evaluation time
+            results['evaluation_time'] = time.time() - start_time
+
+            # Success flag
+            results['success'] = True
+
+            return results
+
+        except Exception as e:
+            self.logger.error(f"Error extracting results: {e}")
+            return self._build_failure_results(e, start_time)
+
+
+    def _build_failure_results(self, error, start_time):
+        """
+        Build failure results
+
+        Args:
+            error: Exception that caused the failure
+            start_time: Evaluation start time
+
+        Returns:
+            dict: Failure results
+        """
+        results = {}
+
+        # Set failure results
+        results['cb_efficiency'] = 0.0
+        results['hp_cop'] = 0.0
+        results['he_efficiency'] = 0.0
+        results['hp_power'] = 0.0
+        results['he_power'] = 0.0
+        results['E_dens_th'] = 0.0
+        results['eta_cb_exer'] = 0.0
+        results['evaluation_time'] = time.time() - start_time
+        results['success'] = False
+        results['error_message'] = str(error)
+
+        self.logger.warning(f"Evaluation failed: {error}")
+
+        return results
+
+
+if __name__ == "__main__":
+    """Test the model wrapper"""
+    print("Testing CBSim model wrapper...")
+
+    # Create model instance
+    model = CBSimModel()
+
+    # Set parameters (using values that worked in feasibility analysis)
+    model.set_parameters(
+        dT_hp_ev_sh=5.0,
+        dT_hp_cd_sc=40.0,
+        dT_he_ev_sh=1.0,
+        dT_he_cd_sc=3.0,
+        T_hp_cs=15.0,
+        T_he_cs=15.0,
+        T_st_ht=120.0,
+        eta_max_cp=0.75,
+        eta_max_ex=0.75,
+        dT_hp_ev_pp=5.0,
+        dT_hp_cd_pp=3.0
+    )
+
+    # Run evaluation
+    success = model.evaluate()
+
+    if success:
+        results = model.get_all_results()
+        print(f"Evaluation successful!")
+        print(f"Carnot battery efficiency: {results['cb_efficiency']:.4f}")
+        print(f"Heat pump COP: {results['hp_cop']:.4f}")
+        print(f"Heat engine efficiency: {results['he_efficiency']:.4f}")
+        print(f"Evaluation time: {results['evaluation_time']:.3f}s")
+    else:
+        print("Evaluation failed")

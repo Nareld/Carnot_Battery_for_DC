@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: cbsim
+Version: 0.1.0
+Summary: Carnot Battery Simulator - CBSim with multi-objective optimization
+Requires-Python: >=3.11
+Requires-Dist: CoolProp>=6.6.0
+Requires-Dist: numpy<2.0,>=1.24.3
+Requires-Dist: scipy<1.12,>=1.11.1
+Requires-Dist: pandas>=2.0.3
+Requires-Dist: deap==1.4.1
+Requires-Dist: pyDOE>=0.3.8
+Requires-Dist: sobolsequence>=0.2.1
+Requires-Dist: h5py>=3.9.0
+Requires-Dist: matplotlib>=3.7.2
+Requires-Dist: pvlib>=0.10.2
+Requires-Dist: seaborn>=0.12.0
+Requires-Dist: tqdm>=4.65.0

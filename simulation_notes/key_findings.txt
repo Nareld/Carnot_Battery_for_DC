@@ -1,0 +1,48 @@
+Key Findings from DC Pareto Frontier Analysis
+=============================================
+
+Global Pareto Front: 46 solutions from 493 total valid solutions
+
+Configuration Dominance:
+- SRVCHP+SRORC (dual regenerator): 33/46 = 71.7%
+- SRVCHP+SBORC (HP regenerator only): 9/46 = 19.6%
+- SBVCHP+SRORC (ORC regenerator only): 4/46 = 8.7%
+- SBVCHP+SBORC (no regenerator): 0/46 = 0.0%
+
+Working Point Distribution:
+- DC-E (High-perf liquid, Winter, ΔT=60K): 33/46 = 71.7%
+- DC-C (Cold-plate liquid, Winter, ΔT=45K): 9/46 = 19.6%
+- DC-A (Air-cooled, Winter, ΔT=30K): 4/46 = 8.7%
+- DC-B, DC-D, DC-F (all summer): 0/46 = 0.0%
+
+Performance Ranges (Global Pareto):
+- eta_P2P: 27.0% - 73.7%
+- E_dens_th: 14.6 - 45.2 kWh/m3
+- eta_II: 5.6% - 32.5%
+
+Top 5 by eta_P2P:
+1. DC-E/SBVCHP_SRORC: eta_P2P=73.74%, E=14.6 kWh/m3, eta_II=13.42%, T_st_ht=85C
+2. DC-E/SBVCHP_SRORC: eta_P2P=69.60%, E=16.9 kWh/m3, eta_II=11.72%, T_st_ht=88C
+3. DC-E/SBVCHP_SRORC: eta_P2P=64.52%, E=18.3 kWh/m3, eta_II=9.53%, T_st_ht=92C
+4. DC-E/SRVCHP_SRORC: eta_P2P=64.12%, E=18.6 kWh/m3, eta_II=13.88%, T_st_ht=96C
+5. DC-E/SRVCHP_SRORC: eta_P2P=63.25%, E=14.9 kWh/m3, eta_II=15.82%, T_st_ht=105C
+
+Dimensionless Parameters (Global Pareto):
+- dT_HP_rel: 0.248 - 0.738 (mean 0.487)
+- dT_TES_rel_sp: 0.254 - 0.729 (mean 0.485)
+
+Key Observations:
+1. High eta_P2P (>60%) solutions have low dT_HP_rel (0.25-0.40)
+   → HP only needs to lift temperature slightly, ORC uses large temperature span
+2. High E_dens (>35 kWh/m3) requires high dT_TES_rel_sp (>0.6)
+   → Larger TES temperature span needed for high energy density
+3. Winter working points dominate due to low T_cs=5°C
+4. SRVCHP+SRORC dominates because regenerators reduce irreversibilities in both cycles
+
+Per-WP Performance Summary:
+- DC-A (ΔT=30K): eta_P2P max=40.8%, E max=33.3 kWh/m3
+- DC-B (ΔT=15K): eta_P2P max=31.1%, E max=34.0 kWh/m3 (not in global Pareto)
+- DC-C (ΔT=45K): eta_P2P max=45.9%, E max=36.5 kWh/m3
+- DC-D (ΔT=30K): eta_P2P max=37.3%, E max=39.7 kWh/m3 (not in global Pareto)
+- DC-E (ΔT=60K): eta_P2P max=73.7%, E max=45.2 kWh/m3
+- DC-F (ΔT=50K): eta_P2P max=52.3%, E max=45.4 kWh/m3 (not in global Pareto)
