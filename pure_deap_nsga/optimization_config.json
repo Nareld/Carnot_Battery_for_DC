@@ -1,0 +1,172 @@
+{
+  "_comment": "DEAP NSGA optimizer config for DC Carnot Battery systems",
+
+  "working_points": {
+    "DC-A": {
+      "name": "DC-A",
+      "label": "Air-cooled (Winter)",
+      "T_hs": 35.0,
+      "T_cs": 5.0,
+      "delta_T": 30.0,
+      "T_st_ht_min": 50.0,
+      "T_st_ht_max": 120.0,
+      "dT_st_sp_min": 15.0,
+      "dT_st_sp_max": 60.0
+    },
+    "DC-B": {
+      "name": "DC-B",
+      "label": "Air-cooled (Summer)",
+      "T_hs": 40.0,
+      "T_cs": 25.0,
+      "delta_T": 15.0,
+      "T_st_ht_min": 55.0,
+      "T_st_ht_max": 120.0,
+      "dT_st_sp_min": 15.0,
+      "dT_st_sp_max": 60.0
+    },
+    "DC-C": {
+      "name": "DC-C",
+      "label": "Cold-plate liquid (Winter)",
+      "T_hs": 50.0,
+      "T_cs": 5.0,
+      "delta_T": 45.0,
+      "T_st_ht_min": 65.0,
+      "T_st_ht_max": 130.0,
+      "dT_st_sp_min": 20.0,
+      "dT_st_sp_max": 70.0
+    },
+    "DC-D": {
+      "name": "DC-D",
+      "label": "Cold-plate liquid (Summer)",
+      "T_hs": 55.0,
+      "T_cs": 25.0,
+      "delta_T": 30.0,
+      "T_st_ht_min": 70.0,
+      "T_st_ht_max": 130.0,
+      "dT_st_sp_min": 20.0,
+      "dT_st_sp_max": 70.0
+    },
+    "DC-E": {
+      "name": "DC-E",
+      "label": "High-perf liquid (Winter)",
+      "T_hs": 65.0,
+      "T_cs": 5.0,
+      "delta_T": 60.0,
+      "T_st_ht_min": 80.0,
+      "T_st_ht_max": 140.0,
+      "dT_st_sp_min": 25.0,
+      "dT_st_sp_max": 80.0
+    },
+    "DC-F": {
+      "name": "DC-F",
+      "label": "High-perf liquid (Summer)",
+      "T_hs": 75.0,
+      "T_cs": 25.0,
+      "delta_T": 50.0,
+      "T_st_ht_min": 90.0,
+      "T_st_ht_max": 145.0,
+      "dT_st_sp_min": 25.0,
+      "dT_st_sp_max": 80.0
+    }
+  },
+
+  "configurations": {
+    "SBVCHP_SBORC": {
+      "name": "SBVCHP+SBORC",
+      "label": "Basic HP + Basic ORC",
+      "class": "SBVCHP_SBORC_STES2T",
+      "has_hp_regenerator": false,
+      "has_he_regenerator": false
+    },
+    "SBVCHP_SRORC": {
+      "name": "SBVCHP+SRORC",
+      "label": "Basic HP + Recuperated ORC",
+      "class": "SBVCHP_SRORC_STES2T",
+      "has_hp_regenerator": false,
+      "has_he_regenerator": true
+    },
+    "SRVCHP_SBORC": {
+      "name": "SRVCHP+SBORC",
+      "label": "Recuperated HP + Basic ORC",
+      "class": "SRVCHP_SBORC_STES2T",
+      "has_hp_regenerator": true,
+      "has_he_regenerator": false
+    },
+    "SRVCHP_SRORC": {
+      "name": "SRVCHP+SRORC",
+      "label": "Recuperated HP + Recuperated ORC",
+      "class": "SRVCHP_SRORC_STES2T",
+      "has_hp_regenerator": true,
+      "has_he_regenerator": true
+    }
+  },
+
+  "fluid_candidates": {
+    "_comment": "HP fluid: Tc > T_st_ht_max + 20K. HE fluid: Tc > T_cs + 20K",
+    "hp_fluids": {
+      "R1233zd(E)": {"Tc_C": 166.5, "GWP": 1,   "class": "HCFO"},
+      "R245fa":     {"Tc_C": 153.9, "GWP": 858,  "class": "HFC"},
+      "R600a":      {"Tc_C": 134.7, "GWP": 3,    "class": "HC"},
+      "R600":       {"Tc_C": 152.0, "GWP": 4,    "class": "HC"}
+    },
+    "he_fluids": {
+      "R1234ze(E)": {"Tc_C": 109.4, "GWP": 1,    "class": "HFO"},
+      "R227ea":     {"Tc_C": 101.8, "GWP": 3220, "class": "HFC"},
+      "R134a":      {"Tc_C": 101.1, "GWP": 1430, "class": "HFC"},
+      "R152a":      {"Tc_C": 113.3, "GWP": 124,  "class": "HFC"}
+    }
+  },
+
+  "optimization": {
+    "_comment": "NSGA-II/III settings",
+    "algorithm": "NSGA2",
+    "population_size": 100,
+    "n_generations": 150,
+    "crossover_prob": 0.9,
+    "mutation_prob": 0.1,
+    "seed": 42,
+
+    "objectives": ["eta_p2p", "energy_density_thermal", "exergy_efficiency"],
+
+    "_available_objectives": {
+      "thermodynamic": [
+        "eta_p2p",
+        "energy_density_thermal",
+        "exergy_efficiency",
+        "energy_density_electric",
+        "cop_hp",
+        "eta_he",
+        "carnot_ratio",
+        "storage_exergy_density",
+        "neg_storage_volume"
+      ],
+      "economic_requires_economic_params": [
+        "neg_lcos",
+        "neg_specific_capex"
+      ]
+    },
+
+    "economic_params": {
+      "_comment": "Used only when economic objectives are selected",
+      "capex_hp_per_kw": 800.0,
+      "capex_he_per_kw": 1200.0,
+      "capex_storage_per_m3": 50.0,
+      "opex_fraction": 0.02,
+      "lifetime_years": 20,
+      "cycles_per_year": 250,
+      "discount_rate": 0.05
+    },
+
+    "dT_he_cs_gl": 10.0,
+    "dT_hp_ev_pp": 5.0,
+    "dT_hp_cd_pp": 3.0,
+    "dT_he_ev_pp": 3.0,
+    "dT_he_cd_pp": 5.0,
+    "dT_he_cd_sc": 3.0,
+    "p_st_ht": 250000.0,
+    "p_st_lt": 250000.0,
+    "epsilon_hp": 0.80,
+    "epsilon_he": 0.80,
+    "fluid_st": "H2O"
+  }
+}
