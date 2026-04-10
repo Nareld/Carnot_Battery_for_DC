@@ -175,13 +175,15 @@ out1 = os.path.join(OUT_DIR, 'global_pareto_DCA_etaex_eth_main.png')
 fig.savefig(out1, dpi=150, bbox_inches='tight', facecolor='white')
 plt.close(fig); print(f'\nSaved → {out1}')
 
+ORC_LS   = {'R1234ze(E)': '-', 'R227ea': '-.', 'R134a': '--', 'R152a': ':'}
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# FIGURE 2: 分解图（2×2）
+# FIGURE 2: 分解图（2×2）— 曲线版
 # ═══════════════════════════════════════════════════════════════════════════════
 fig2, axes = plt.subplots(2, 2, figsize=(14, 11), constrained_layout=True)
 fig2.suptitle(
     r'DC-A  |  Fluid pair contributions within each CB configuration''\n'
-    r'Color = HP fluid  ·  Marker shape = ORC fluid  ·  Thick line = config pooled front'
+    r'Color = HP fluid  ·  Line style = ORC fluid  ·  Thick line = config pooled front'
     r'  |  Objective: $\eta_{ex}$ vs $e_{th}$',
     fontsize=10.5, fontweight='bold'
 )
@@ -196,26 +198,27 @@ for ax2, cb in zip(axes.flat, CFG_STYLE):
     x_lo2 = max(0, px.min()-1); x_hi2 = px.max()+4
     y_lo2 = max(0, py.min()-0.5); y_hi2 = py.max()+2.5
 
-    # non-contributing: gray scatter
+    # non-contributing: thin gray lines
     for item in items:
         if (item['fhp'], item['fhe']) in contrib_pairs: continue
         nd = nondom_2d(item['df'])
         if len(nd) < 2: continue
         qx, qy = front_line(nd)
-        ax2.scatter(qx, qy, color='#cccccc', s=12, alpha=0.5,
-                    edgecolors='none', zorder=2)
+        ax2.plot(qx, qy, color='#cccccc', lw=0.6, alpha=0.5,
+                 solid_capstyle='round', zorder=2)
 
-    # contributing: colored scatter (color=HP fluid, marker=ORC fluid)
+    # contributing: colored lines (color=HP fluid, linestyle=ORC fluid)
     for item in items:
         if (item['fhp'], item['fhe']) not in contrib_pairs: continue
         nd = nondom_2d(item['df'])
         if len(nd) < 2: continue
         qx, qy = front_line(nd)
-        color  = HP_COLOR.get(item['fhp'], '#888')
-        marker = ORC_MARKER.get(item['fhe'], 'o')
-        ax2.scatter(qx, qy, color=color, marker=marker,
-                    s=28, alpha=0.82, edgecolors='white',
-                    linewidths=0.5, zorder=4)
+        color = HP_COLOR.get(item['fhp'], '#888')
+        ls    = ORC_LS.get(item['fhe'], '-')
+        ax2.plot(qx, qy, color=color, ls=ls, lw=1.4, alpha=0.85,
+                 solid_capstyle='round', zorder=4)
+        ax2.scatter(qx[-1], qy[-1], color=color, s=22, zorder=5,
+                    edgecolors='white', linewidths=0.5)
 
     # pooled config front: smooth line
     ax2.plot(px, py, color=cb_st['color'], lw=2.8, zorder=8,
@@ -257,20 +260,17 @@ for ax2, cb in zip(axes.flat, CFG_STYLE):
     ax2.set_title(f"{cb_st['label']}\nContributing fluid pairs: {n_c} / {n_t}",
                   fontsize=9.5, fontweight='bold', color=cb_st['color'], pad=5)
 
-    # legend
+    # legend: line color=HP, linestyle=ORC
     hp_f = sorted({fhp for fhp,_ in contrib_pairs})
     he_f = sorted({fhe for _,fhe in contrib_pairs})
-    hp_h = [mlines.Line2D([],[],color=HP_COLOR[f],marker='o',linestyle='none',
-                           markersize=6,label=f'HP: {f}') for f in hp_f]
-    he_h = [mlines.Line2D([],[],color='#555',marker=ORC_MARKER.get(f,'o'),
-                           linestyle='none',markersize=6,label=f'ORC: {f}') for f in he_f]
+    hp_h = [mlines.Line2D([],[],color=HP_COLOR[f],lw=1.8,label=f'HP: {f}') for f in hp_f]
+    he_h = [mlines.Line2D([],[],color='#555',ls=ORC_LS.get(f,'-'),lw=1.5,label=f'ORC: {f}') for f in he_f]
     pool_h = mlines.Line2D([],[],color=cb_st['color'],lw=2.8,label='Config pooled front')
-    nc_h   = mlines.Line2D([],[],color='#cccccc',marker='o',linestyle='none',
-                            markersize=5,label='Non-contributing pairs')
+    nc_h   = mlines.Line2D([],[],color='#cccccc',lw=0.8,label='Non-contributing pairs')
     ax2.legend(handles=hp_h+he_h+[pool_h,nc_h],
                fontsize=7, loc='upper right', ncol=2,
                framealpha=0.90, edgecolor='#cccccc', borderpad=0.6,
-               columnspacing=0.8, handlelength=1.5)
+               columnspacing=0.8, handlelength=1.8)
 
 out2 = os.path.join(OUT_DIR, 'config_fluid_decomposition_DCA_etaex_eth.png')
 fig2.savefig(out2, dpi=150, bbox_inches='tight', facecolor='white')
