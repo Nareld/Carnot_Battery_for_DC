@@ -1,0 +1,34 @@
+# OS metadata
+.DS_Store
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local editor/project settings
+.vscode/
+
+# Temporary exports and scratch files
+*.log
+*.out
+pareto_results_export.tar.gz
+paper_outputs/write_test_marker.txt
+
+# Generated literature parsing artifacts
+paper/**/*_origin.pdf
+paper/**/layout.json
+paper/**/*_model.json
+paper/**/*_content_list.json
+paper/**/*_content_list_v2.json
+paper/**/block_list.json
+paper/**/images/
+
+# Content intentionally kept out of the main sync batches
+undergraduate_thesis/
+simulation_notes/plot_shaft_*.py
+simulation_notes/figs/shaft_speed_*.png
