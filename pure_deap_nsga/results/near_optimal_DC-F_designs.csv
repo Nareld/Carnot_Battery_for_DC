@@ -1,0 +1,4 @@
+design_name,design_description,T_st_ht,dT_st_sp,dT_hp_cs_gl,dT_hp_ev_sh,dT_he_ev_sh,dT_hp_cd_sc,eta_max_cp,eta_max_ex,eta_pm,eta_p2p,energy_density_thermal,exergy_efficiency,wp,cb_config,fluid_hp,fluid_he,label,orc_type,hp_type,T_st_lt,dT_HP_rel
+D_eff,Efficiency-oriented: maximize η_p2p,126.205062,67.003617,3.099494,3.018103,2.059203,11.730455,0.899964,0.899745,0.543326,0.597005,37.635962,0.080911,DC-F,SRVCHP_SRORC,R1233zd(E),R227ea,High-perf liquid (Summer),SRORC,SRVCHP,59.201445,
+D_den,Density-oriented: maximize e_th,126.902724,78.569014,7.380830,3.175327,0.822731,14.399677,0.899910,0.899801,0.546426,0.476524,44.192839,0.135613,DC-F,SRVCHP_SBORC,R1233zd(E),R227ea,High-perf liquid (Summer),SBORC,SRVCHP,48.333710,
+D_bal,Balanced: closest to ideal point (knee),127.365638,71.312468,1.671758,3.554056,1.113306,12.746772,0.894875,0.899737,0.544976,0.571392,40.061346,0.045385,DC-F,SRVCHP_SRORC,R1233zd(E),R227ea,High-perf liquid (Summer),SRORC,SRVCHP,56.053170,

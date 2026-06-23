@@ -1,0 +1,4 @@
+design_name,design_description,T_st_ht,dT_st_sp,dT_hp_cs_gl,dT_hp_ev_sh,dT_he_ev_sh,dT_hp_cd_sc,eta_max_cp,eta_max_ex,eta_pm,eta_p2p,energy_density_thermal,exergy_efficiency,wp,cb_config,fluid_hp,fluid_he,label,orc_type,hp_type,T_st_lt,dT_HP_rel
+D_eff,Efficiency-oriented: maximize η_p2p,117.109065,54.038717,2.324833,3.187268,2.915603,13.747704,0.899042,0.899650,0.544226,0.598081,30.416576,0.098663,DC-C,SRVCHP_SRORC,R245fa,R227ea,Cold-plate liquid (Winter),SRORC,SRVCHP,63.070347,
+D_den,Density-oriented: maximize e_th,112.625112,69.999867,0.060735,3.003373,1.133791,11.644087,0.899460,0.899888,0.548735,0.490229,39.577695,0.002223,DC-C,SRVCHP_SRORC,R1233zd(E),R227ea,Cold-plate liquid (Winter),SRORC,SRVCHP,42.625245,
+D_bal,Balanced: closest to ideal point (knee),120.653709,69.994383,1.037428,3.196603,0.511464,13.754663,0.898947,0.899191,0.543366,0.568389,39.433480,0.046193,DC-C,SRVCHP_SRORC,R245fa,R227ea,Cold-plate liquid (Winter),SRORC,SRVCHP,50.659326,

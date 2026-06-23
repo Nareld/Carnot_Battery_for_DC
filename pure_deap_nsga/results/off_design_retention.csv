@@ -1,0 +1,16 @@
+source_wp,design_name,direction,T_hs_nom,T_cs_nom,T_hs_off,T_cs_off,converged_off,R_eta_p2p,Δ_eta_p2p,R_energy_density_thermal,Δ_energy_density_thermal,R_exergy_efficiency,Δ_exergy_efficiency
+DC-A,D_bal,winter→summer,35.000000,5.000000,40.000000,25.000000,True,0.598877,-0.193716,1.000000,0.000000,1.738371,0.034210
+DC-A,D_den,winter→summer,35.000000,5.000000,40.000000,25.000000,False,,,,,,
+DC-A,D_eff,winter→summer,35.000000,5.000000,40.000000,25.000000,True,0.685412,-0.156045,1.000000,0.000000,1.721579,0.060827
+DC-B,D_bal,summer→winter,40.000000,25.000000,35.000000,5.000000,False,,,,,,
+DC-B,D_den,summer→winter,40.000000,25.000000,35.000000,5.000000,False,,,,,,
+DC-C,D_den,winter→summer,50.000000,5.000000,55.000000,25.000000,False,,,,,,
+DC-C,D_eff,winter→summer,50.000000,5.000000,55.000000,25.000000,True,0.681279,-0.190621,1.000000,0.000000,1.210133,0.020732
+DC-D,D_bal,summer→winter,55.000000,25.000000,50.000000,5.000000,False,,,,,,
+DC-D,D_den,summer→winter,55.000000,25.000000,50.000000,5.000000,False,,,,,,
+DC-E,D_bal,winter→summer,65.000000,5.000000,75.000000,25.000000,False,,,,,,
+DC-E,D_den,winter→summer,65.000000,5.000000,75.000000,25.000000,False,,,,,,
+DC-E,D_eff,winter→summer,65.000000,5.000000,75.000000,25.000000,True,0.634892,-0.266926,1.000000,0.000000,0.763879,-0.000476
+DC-F,D_bal,summer→winter,75.000000,25.000000,65.000000,5.000000,False,,,,,,
+DC-F,D_den,summer→winter,75.000000,25.000000,65.000000,5.000000,False,,,,,,
+DC-F,D_eff,summer→winter,75.000000,25.000000,65.000000,5.000000,False,,,,,,

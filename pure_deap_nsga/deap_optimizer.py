@@ -88,7 +88,7 @@ class Objectives:
     @staticmethod
     def cop_hp(cb) -> float:
         """Heat pump coefficient of performance COP_HP"""
-        return cb.my_HP.COP_hp
+        return cb.my_HP.eta_hp_cyclen
 
     @staticmethod
     def eta_he(cb) -> float:

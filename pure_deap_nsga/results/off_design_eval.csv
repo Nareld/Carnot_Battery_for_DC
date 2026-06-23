@@ -1,0 +1,37 @@
+source_wp,design_name,eval_type,eval_wp,direction,T_hs,T_cs,cb_config,fluid_hp,fluid_he,converged,eta_p2p,energy_density_thermal,exergy_efficiency,cop_hp,eta_he,error
+DC-A,D_eff,nominal,DC-A,winter→summer,35.000000,5.000000,SRVCHP_SRORC,R600,R227ea,True,0.496031,30.876246,0.084297,3.714684,0.133532,
+DC-A,D_eff,off-design,DC-B,winter→summer,40.000000,25.000000,SRVCHP_SRORC,R600,R227ea,True,0.339986,30.876246,0.145123,3.948700,0.086101,
+DC-A,D_den,nominal,DC-A,winter→summer,35.000000,5.000000,SRVCHP_SRORC,R1233zd(E),R227ea,True,0.418807,33.961499,0.149114,4.275700,0.097951,
+DC-A,D_den,off-design,DC-B,winter→summer,40.000000,25.000000,SRVCHP_SRORC,R1233zd(E),R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-A,D_bal,nominal,DC-A,winter→summer,35.000000,5.000000,SRVCHP_SRORC,R600,R227ea,True,0.482935,33.783159,0.046332,3.793073,0.127320,
+DC-A,D_bal,off-design,DC-B,winter→summer,40.000000,25.000000,SRVCHP_SRORC,R600,R227ea,True,0.289219,33.783159,0.080542,4.034291,0.071690,
+DC-B,D_eff,nominal,DC-B,summer→winter,40.000000,25.000000,SRVCHP_SRORC,R600,R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-B,D_eff,off-design,DC-A,summer→winter,35.000000,5.000000,SRVCHP_SRORC,R600,R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-B,D_den,nominal,DC-B,summer→winter,40.000000,25.000000,SRVCHP_SBORC,R600,R227ea,True,0.338257,33.766205,0.253023,3.941479,0.085820,
+DC-B,D_den,off-design,DC-A,summer→winter,35.000000,5.000000,SRVCHP_SBORC,R600,R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-B,D_bal,nominal,DC-B,summer→winter,40.000000,25.000000,SRVCHP_SRORC,R600,R227ea,True,0.344248,32.459929,0.161787,3.921457,0.087786,
+DC-B,D_bal,off-design,DC-A,summer→winter,35.000000,5.000000,SRVCHP_SRORC,R600,R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-C,D_eff,nominal,DC-C,winter→summer,50.000000,5.000000,SRVCHP_SRORC,R245fa,R227ea,True,0.598081,30.416576,0.098663,4.551376,0.131407,
+DC-C,D_eff,off-design,DC-D,winter→summer,55.000000,25.000000,SRVCHP_SRORC,R245fa,R227ea,True,0.407460,30.416576,0.119396,4.902818,0.083107,
+DC-C,D_den,nominal,DC-C,winter→summer,50.000000,5.000000,SRVCHP_SRORC,R1233zd(E),R227ea,True,0.490229,39.577695,0.002223,5.024840,0.097561,
+DC-C,D_den,off-design,DC-D,winter→summer,55.000000,25.000000,SRVCHP_SRORC,R1233zd(E),R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-C,D_bal,nominal,DC-C,winter→summer,50.000000,5.000000,SRVCHP_SRORC,R245fa,R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-C,D_bal,off-design,DC-D,winter→summer,55.000000,25.000000,SRVCHP_SRORC,R245fa,R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-D,D_eff,nominal,DC-D,summer→winter,55.000000,25.000000,SRVCHP_SRORC,R600,R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-D,D_eff,off-design,DC-C,summer→winter,50.000000,5.000000,SRVCHP_SRORC,R600,R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-D,D_den,nominal,DC-D,summer→winter,55.000000,25.000000,SRVCHP_SBORC,R600,R227ea,True,0.365492,39.402282,0.213771,4.530828,0.080668,
+DC-D,D_den,off-design,DC-C,summer→winter,50.000000,5.000000,SRVCHP_SBORC,R600,R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-D,D_bal,nominal,DC-D,summer→winter,55.000000,25.000000,SRVCHP_SRORC,R245fa,R227ea,True,0.427368,37.065867,0.064683,4.574361,0.093427,
+DC-D,D_bal,off-design,DC-C,summer→winter,50.000000,5.000000,SRVCHP_SRORC,R245fa,R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-E,D_eff,nominal,DC-E,winter→summer,65.000000,5.000000,SRVCHP_SRORC,R1233zd(E),R227ea,True,0.731088,35.226516,0.002015,5.889091,0.124143,
+DC-E,D_eff,off-design,DC-F,winter→summer,75.000000,25.000000,SRVCHP_SRORC,R1233zd(E),R227ea,True,0.464162,35.226516,0.001539,7.090648,0.065461,
+DC-E,D_den,nominal,DC-E,winter→summer,65.000000,5.000000,SRVCHP_SRORC,R1233zd(E),R227ea,True,0.564411,45.057939,0.054614,5.931898,0.095148,
+DC-E,D_den,off-design,DC-F,winter→summer,75.000000,25.000000,SRVCHP_SRORC,R1233zd(E),R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-E,D_bal,nominal,DC-E,winter→summer,65.000000,5.000000,SRVCHP_SRORC,R1233zd(E),R227ea,True,0.693416,44.224998,0.039185,5.467986,0.126814,
+DC-E,D_bal,off-design,DC-F,winter→summer,75.000000,25.000000,SRVCHP_SRORC,R1233zd(E),R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-F,D_eff,nominal,DC-F,summer→winter,75.000000,25.000000,SRVCHP_SRORC,R1233zd(E),R227ea,True,0.597004,37.635962,0.080911,6.212694,0.096094,
+DC-F,D_eff,off-design,DC-E,summer→winter,65.000000,5.000000,SRVCHP_SRORC,R1233zd(E),R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-F,D_den,nominal,DC-F,summer→winter,75.000000,25.000000,SRVCHP_SBORC,R1233zd(E),R227ea,True,0.476524,44.192839,0.135613,5.890578,0.080896,
+DC-F,D_den,off-design,DC-E,summer→winter,65.000000,5.000000,SRVCHP_SBORC,R1233zd(E),R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us
+DC-F,D_bal,nominal,DC-F,summer→winter,75.000000,25.000000,SRVCHP_SRORC,R1233zd(E),R227ea,True,0.571392,40.061346,0.045385,6.109235,0.093529,
+DC-F,D_bal,off-design,DC-E,summer→winter,65.000000,5.000000,SRVCHP_SRORC,R1233zd(E),R227ea,False,,,,,,An inconsistency was detected in the cycle!                              In: /Us

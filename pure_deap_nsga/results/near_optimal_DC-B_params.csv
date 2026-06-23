@@ -1,0 +1,11 @@
+variable,label,mean,std,cv,min,max,classification
+eta_max_cp,"$\eta_{max,cp}$ [-]",0.899606,0.000482,0.000536,0.897320,0.899923,must-have
+T_st_ht,"$T_{st,ht}$ [°C]",119.733265,0.240999,0.002013,118.874086,119.996157,must-have
+eta_max_ex,"$\eta_{max,ex}$ [-]",0.898274,0.002583,0.002875,0.891135,0.899964,must-have
+eta_pm,$\eta_{pm}$ [-],0.547169,0.001590,0.002906,0.540144,0.549553,must-have
+dT_hp_cd_sc,"$\Delta T_{hp,cd,sc}$ [K]",14.507692,0.388337,0.026768,13.750261,14.985056,must-have
+T_st_lt,"$T_{st,lt}$ [°C]",63.304723,1.710263,0.027016,59.345354,66.070026,must-have
+dT_st_sp,"$\Delta T_{st,sp}$ [K]",56.428542,1.643261,0.029121,53.642630,59.999962,must-have
+dT_hp_ev_sh,"$\Delta T_{hp,ev,sh}$ [K]",3.288463,0.244237,0.074271,3.021553,4.074798,must-have
+dT_he_ev_sh,"$\Delta T_{he,ev,sh}$ [K]",1.477815,0.374112,0.253152,1.179544,2.856197,real-choice
+dT_hp_cs_gl,"$\Delta T_{hp,cs,gl}$ [K]",2.592448,1.891275,0.729532,0.034750,6.075648,real-choice

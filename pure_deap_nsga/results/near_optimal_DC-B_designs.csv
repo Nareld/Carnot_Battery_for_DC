@@ -1,0 +1,4 @@
+design_name,design_description,T_st_ht,dT_st_sp,dT_hp_cs_gl,dT_hp_ev_sh,dT_he_ev_sh,dT_hp_cd_sc,eta_max_cp,eta_max_ex,eta_pm,eta_p2p,energy_density_thermal,exergy_efficiency,wp,cb_config,fluid_hp,fluid_he,label,orc_type,hp_type,T_st_lt,dT_HP_rel
+D_eff,Efficiency-oriented: maximize η_p2p,119.712656,53.642630,3.047517,3.367108,1.582555,14.492027,0.899904,0.898783,0.547456,0.363775,30.155047,0.266245,DC-B,SRVCHP_SRORC,R600,R227ea,Air-cooled (Summer),SRORC,SRVCHP,66.070026,
+D_den,Density-oriented: maximize e_th,119.642641,59.999962,3.392719,3.069744,1.272177,14.982673,0.899894,0.894519,0.548005,0.338257,33.766204,0.253023,DC-B,SRVCHP_SBORC,R600,R227ea,Air-cooled (Summer),SBORC,SRVCHP,59.642680,
+D_bal,Balanced: closest to ideal point (knee),119.972040,57.709500,1.006463,3.022189,1.589896,14.940328,0.899327,0.899916,0.547552,0.344248,32.459929,0.161787,DC-B,SRVCHP_SRORC,R600,R227ea,Air-cooled (Summer),SRORC,SRVCHP,62.262540,
