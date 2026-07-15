@@ -19,12 +19,16 @@ from   CoolProp import AbstractState
 
 import os
 import sys
+
+# ── CBSim diagnostics (non-intrusive, does not alter thermodynamic calculations) ──
+from _module_diagnostics import DiagnosticMixin
+
 SIMULATOR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(SIMULATOR,'COMPONENTS'))
 
 #%% MODEL: SBORC
 
-class SBORC:
+class SBORC(DiagnosticMixin):
     """
     Class for the simulation of Subcritical Basic Organic Rankine Cycles.
 
@@ -115,28 +119,35 @@ class SBORC:
         """
         Evaluate the SBORC cycle for the given boundary conditions.
         """
-        
+
         self.error = True
-        
+        self._init_diagnostics()
+
         if self.parameters['version'] not in ['thermodynamic_full',
                                               'operational_light']:
+            self._add_issue('PARAM_INVALID_VERSION', 'HE', 'evaluate',
+                          f'version={self.parameters.get("version")} is invalid')
             raise ValueError('An inconsistency was detected!\
                               In: '+os.path.join(os.path.abspath(__file__),
                 'SBORC','evaluate: parameters["version"] is not valid'))
-        
+
         if self.parameters['version'] == 'thermodynamic_full'\
         or self.parameters['version'] == 'operational_light':
             if self.options['debug']:
                 self.evaluate_cycle()
                 self.error = False
             else:
-                try:    
+                try:
                     self.error = False
                     self.evaluate_cycle()
                     self.check_consistency()
-                except: self.error = True
-        
-        if self.error == True: 
+                except Exception as exc:
+                    self._add_issue('EVALUATE_CYCLE_EXCEPTION', 'HE', 'evaluate',
+                                  f'{type(exc).__name__}: {str(exc)[:200]}',
+                                  exception_type=type(exc).__name__)
+                    self.error = True
+
+        if self.error == True:
             raise ValueError('An inconsistency was detected in the cycle!\
                               In: '+os.path.join(os.path.abspath(__file__),
                               'SBORC','check_consistency'))
@@ -565,45 +576,88 @@ class SBORC:
     
     def check_consistency(self):
         """
-        Check that the results are consistent.
+        Check that the results are consistent. (instrumented with diagnostics)
         """
-        if self.s_he_4x > self.s_he_4:                  self.error = True
-        if self.s_he_1x < self.s_he_1:                  self.error = True
-        if self.s_he_2x < self.s_he_2:                  self.error = True
-        if self.s_he_3x > self.s_he_3:                  self.error = True
-        if self.s_he_4  < self.s_he_3:                  self.error = True
-        if self.s_he_3x < self.s_he_2x:                 self.error = True
-        if self.s_he_4x < self.s_he_1x:                 self.error = True
-        if self.T_he_2  > self.T_he_hs_ex-0.95*self.parameters['dT_he_ev_pp']:
-            self.error = True
-        if self.T_he_3  > self.T_he_hs_su-0.95*self.parameters['dT_he_ev_pp']:
-            self.error = True
-        if self.T_he_4  < self.T_he_cs_ex+0.95*self.parameters['dT_he_cd_pp']: 
-            self.error = True
-        if self.T_he_1  < self.T_he_cs_su+0.95*self.parameters['dT_he_cd_pp']: 
-            self.error = True
-        if self.eta_he_cyclen < 0:                      self.error = True
-        if self.T_hi-self.T_wh    < 0.95*self.parameters['dT_he_ev_pp']:  
-            self.error = True
-        if self.T_he_4x-self.T_ci < 0.95*self.parameters['dT_he_cd_pp']:    
-            self.error = True  
-        
-        if self.p_he_1x < 0.99*self.p_he_1x_min: self.error = True
-        if self.p_he_3x > 1.00*self.p_he_3x_max: self.error = True
-        
-        if abs(self.resi_1) > 1e-2: self.error = True
-        if abs(self.resi_2) > 1e-2: self.error = True
-        
+        f = self.fail
+        pp_ev = self.parameters['dT_he_ev_pp']
+        pp_cd = self.parameters['dT_he_cd_pp']
+
+        if f(self.s_he_4x > self.s_he_4, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4x > s_4', s_4x=self.s_he_4x, s_4=self.s_he_4):
+            return
+        if f(self.s_he_1x < self.s_he_1, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_1x < s_1', s_1x=self.s_he_1x, s_1=self.s_he_1):
+            return
+        if f(self.s_he_2x < self.s_he_2, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_2x < s_2', s_2x=self.s_he_2x, s_2=self.s_he_2):
+            return
+        if f(self.s_he_3x > self.s_he_3, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_3x > s_3', s_3x=self.s_he_3x, s_3=self.s_he_3):
+            return
+        if f(self.s_he_4 < self.s_he_3, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4 < s_3', s_4=self.s_he_4, s_3=self.s_he_3):
+            return
+        if f(self.s_he_3x < self.s_he_2x, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_3x < s_2x', s_3x=self.s_he_3x, s_2x=self.s_he_2x):
+            return
+        if f(self.s_he_4x < self.s_he_1x, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4x < s_1x', s_4x=self.s_he_4x, s_1x=self.s_he_1x):
+            return
+        if f(self.T_he_2 > self.T_he_hs_ex - 0.95 * pp_ev, 'HX_PINCH_HE_EVAP', 'HE',
+             'check_consistency', 'evaporator cold-side pinch violated',
+             T_he_2=self.T_he_2, T_he_hs_ex=self.T_he_hs_ex, min_pinch=pp_ev):
+            return
+        if f(self.T_he_3 > self.T_he_hs_su - 0.95 * pp_ev, 'HX_PINCH_HE_EVAP', 'HE',
+             'check_consistency', 'evaporator hot-side pinch violated',
+             T_he_3=self.T_he_3, T_he_hs_su=self.T_he_hs_su, min_pinch=pp_ev):
+            return
+        if f(self.T_he_4 < self.T_he_cs_ex + 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'condenser cold-side pinch violated',
+             T_he_4=self.T_he_4, T_he_cs_ex=self.T_he_cs_ex, min_pinch=pp_cd):
+            return
+        if f(self.T_he_1 < self.T_he_cs_su + 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'condenser hot-side pinch violated',
+             T_he_1=self.T_he_1, T_he_cs_su=self.T_he_cs_su, min_pinch=pp_cd):
+            return
+        if f(self.eta_he_cyclen < 0, 'EFFICIENCY_NEGATIVE', 'HE',
+             'check_consistency', 'negative ORC cycle efficiency',
+             eta_he_cyclen=self.eta_he_cyclen):
+            return
+        if f(self.T_hi - self.T_wh < 0.95 * pp_ev, 'HX_PINCH_HE_EVAP', 'HE',
+             'check_consistency', 'storage-side evaporator pinch violated',
+             T_hi=self.T_hi, T_wh=self.T_wh, min_pinch=pp_ev):
+            return
+        if f(self.T_he_4x - self.T_ci < 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'recuperator/storage condenser pinch',
+             T_he_4x=self.T_he_4x, T_ci=self.T_ci, min_pinch=pp_cd):
+            return
+        if f(self.p_he_1x < 0.99 * self.p_he_1x_min, 'PRESSURE_BOUND_LOW', 'HE',
+             'check_consistency', 'evaporator pressure below minimum',
+             p_he_1x=self.p_he_1x, p_min=self.p_he_1x_min):
+            return
+        if f(self.p_he_3x > 1.00 * self.p_he_3x_max, 'PRESSURE_BOUND_CRITICAL', 'HE',
+             'check_consistency', 'condenser pressure above maximum',
+             p_he_3x=self.p_he_3x, p_max=self.p_he_3x_max):
+            return
+        if f(abs(self.resi_1) > 1e-2, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
+             'check_consistency', 'residual 1 too large', residual=abs(self.resi_1)):
+            return
+        if f(abs(self.resi_2) > 1e-2, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
+             'check_consistency', 'residual 2 too large', residual=abs(self.resi_2)):
+            return
+
         if not bool(self.parameters['wet_ex']):
-            p_vec = np.linspace(self.p_he_3,self.p_he_4)
+            p_vec = np.linspace(self.p_he_3, self.p_he_4)
             for i, p in enumerate(p_vec):
-                self.state_he.update(CoolProp.PSmass_INPUTS,p,self.s_he_3) 
+                self.state_he.update(CoolProp.PSmass_INPUTS, p, self.s_he_3)
                 h_is = self.state_he.hmass()
-                h    = self.i_he_3-self.eta_is_ex*(self.i_he_3-h_is)
-                self.state_he.update(CoolProp.HmassP_INPUTS,h,p)
+                h    = self.i_he_3 - self.eta_is_ex * (self.i_he_3 - h_is)
+                self.state_he.update(CoolProp.HmassP_INPUTS, h, p)
                 if 0 < self.state_he.Q() < 1:
-                    self.error = True
-                if  self.error: break
+                    f(True, 'PHASE_WET_EXPANSION', 'HE',
+                      'check_consistency', f'wet expansion at p={p:.0f} Pa',
+                      p=p, quality=self.state_he.Q())
+                    break
     
     def retrieve_kpi(self):
         """
@@ -1250,47 +1304,94 @@ class SRORC(SBORC):
 
     def check_consistency(self):
         """
-        Check that the results are consistent.
+        Check that the results are consistent. (instrumented with diagnostics)
         """
-        if self.s_he_4x > self.s_he_4:                  self.error = True
-        if self.s_he_4r > self.s_he_4:                  self.error = True
-        if self.s_he_4x > self.s_he_4r:                 self.error = True
-        if self.s_he_1x < self.s_he_1:                  self.error = True
-        if self.s_he_2x < self.s_he_2:                  self.error = True
-        if self.s_he_3x > self.s_he_3:                  self.error = True
-        if self.s_he_4  < self.s_he_3:                  self.error = True
-        if self.s_he_3x < self.s_he_2x:                 self.error = True
-        if self.s_he_4x < self.s_he_1x:                 self.error = True
-        if self.T_he_2r > self.T_he_hs_ex-0.95*self.parameters['dT_he_ev_pp']:
-            self.error = True
-        if self.T_he_3  > self.T_he_hs_su-0.95*self.parameters['dT_he_ev_pp']:
-            self.error = True
-        if self.T_he_4r < self.T_he_cs_ex+0.95*self.parameters['dT_he_cd_pp']: 
-            self.error = True
-        if self.T_he_1  < self.T_he_cs_su+0.95*self.parameters['dT_he_cd_pp']:
-            self.error = True
-        if self.eta_he_cyclen < 0:                      self.error = True
-        if self.T_hi-self.T_wh    < 0.95*self.parameters['dT_he_ev_pp']:  
-            self.error = True
-        if self.T_he_4x-self.T_ci < 0.95*self.parameters['dT_he_cd_pp']:    
-            self.error = True 
-        
-        if self.p_he_1x < 0.99*self.p_he_1x_min: self.error = True
-        if self.p_he_3x > 1.00*self.p_he_3x_max: self.error = True
+        f = self.fail
+        pp_ev = self.parameters['dT_he_ev_pp']
+        pp_cd = self.parameters['dT_he_cd_pp']
 
-        if abs(self.resi_1) > 1e-2: self.error = True
-        if abs(self.resi_2) > 1e-2: self.error = True
-        
+        if f(self.s_he_4x > self.s_he_4, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4x > s_4', s_4x=self.s_he_4x, s_4=self.s_he_4):
+            return
+        if f(self.s_he_4r > self.s_he_4, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4r > s_4 (recuperator)', s_4r=self.s_he_4r, s_4=self.s_he_4):
+            return
+        if f(self.s_he_4x > self.s_he_4r, 'RECUPERATOR_CONSTRAINT', 'HE',
+             'check_consistency', 's_4x > s_4r (recuperator cross)', s_4x=self.s_he_4x, s_4r=self.s_he_4r):
+            return
+        if f(self.s_he_1x < self.s_he_1, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_1x < s_1', s_1x=self.s_he_1x, s_1=self.s_he_1):
+            return
+        if f(self.s_he_2x < self.s_he_2, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_2x < s_2', s_2x=self.s_he_2x, s_2=self.s_he_2):
+            return
+        if f(self.s_he_3x > self.s_he_3, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_3x > s_3', s_3x=self.s_he_3x, s_3=self.s_he_3):
+            return
+        if f(self.s_he_4 < self.s_he_3, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4 < s_3', s_4=self.s_he_4, s_3=self.s_he_3):
+            return
+        if f(self.s_he_3x < self.s_he_2x, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_3x < s_2x', s_3x=self.s_he_3x, s_2x=self.s_he_2x):
+            return
+        if f(self.s_he_4x < self.s_he_1x, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4x < s_1x', s_4x=self.s_he_4x, s_1x=self.s_he_1x):
+            return
+        if f(self.T_he_2r > self.T_he_hs_ex - 0.95 * pp_ev, 'HX_PINCH_HE_EVAP', 'HE',
+             'check_consistency', 'evaporator cold-side pinch (recuperator) violated',
+             T_he_2r=self.T_he_2r, T_he_hs_ex=self.T_he_hs_ex, min_pinch=pp_ev):
+            return
+        if f(self.T_he_3 > self.T_he_hs_su - 0.95 * pp_ev, 'HX_PINCH_HE_EVAP', 'HE',
+             'check_consistency', 'evaporator hot-side pinch violated',
+             T_he_3=self.T_he_3, T_he_hs_su=self.T_he_hs_su, min_pinch=pp_ev):
+            return
+        if f(self.T_he_4r < self.T_he_cs_ex + 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'condenser cold-side pinch (recuperator) violated',
+             T_he_4r=self.T_he_4r, T_he_cs_ex=self.T_he_cs_ex, min_pinch=pp_cd):
+            return
+        if f(self.T_he_1 < self.T_he_cs_su + 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'condenser hot-side pinch violated',
+             T_he_1=self.T_he_1, T_he_cs_su=self.T_he_cs_su, min_pinch=pp_cd):
+            return
+        if f(self.eta_he_cyclen < 0, 'EFFICIENCY_NEGATIVE', 'HE',
+             'check_consistency', 'negative ORC cycle efficiency',
+             eta_he_cyclen=self.eta_he_cyclen):
+            return
+        if f(self.T_hi - self.T_wh < 0.95 * pp_ev, 'HX_PINCH_HE_EVAP', 'HE',
+             'check_consistency', 'storage-side evaporator pinch violated',
+             T_hi=self.T_hi, T_wh=self.T_wh, min_pinch=pp_ev):
+            return
+        if f(self.T_he_4x - self.T_ci < 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'recuperator/storage condenser pinch',
+             T_he_4x=self.T_he_4x, T_ci=self.T_ci, min_pinch=pp_cd):
+            return
+        if f(self.p_he_1x < 0.99 * self.p_he_1x_min, 'PRESSURE_BOUND_LOW', 'HE',
+             'check_consistency', 'evaporator pressure below minimum',
+             p_he_1x=self.p_he_1x, p_min=self.p_he_1x_min):
+            return
+        if f(self.p_he_3x > 1.00 * self.p_he_3x_max, 'PRESSURE_BOUND_CRITICAL', 'HE',
+             'check_consistency', 'condenser pressure above maximum',
+             p_he_3x=self.p_he_3x, p_max=self.p_he_3x_max):
+            return
+        if f(abs(self.resi_1) > 1e-2, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
+             'check_consistency', 'residual 1 too large', residual=abs(self.resi_1)):
+            return
+        if f(abs(self.resi_2) > 1e-2, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
+             'check_consistency', 'residual 2 too large', residual=abs(self.resi_2)):
+            return
+
         if not bool(self.parameters['wet_ex']):
-            p_vec = np.linspace(self.p_he_3,self.p_he_4)
+            p_vec = np.linspace(self.p_he_3, self.p_he_4)
             for i, p in enumerate(p_vec):
-                self.state_he.update(CoolProp.PSmass_INPUTS,p,self.s_he_3) 
+                self.state_he.update(CoolProp.PSmass_INPUTS, p, self.s_he_3)
                 h_is = self.state_he.hmass()
-                h    = self.i_he_3-self.eta_is_ex*(self.i_he_3-h_is)
-                self.state_he.update(CoolProp.HmassP_INPUTS,h,p)
+                h    = self.i_he_3 - self.eta_is_ex * (self.i_he_3 - h_is)
+                self.state_he.update(CoolProp.HmassP_INPUTS, h, p)
                 if 0 < self.state_he.Q() < 1:
-                    self.error = True
-                if  self.error: break
+                    f(True, 'PHASE_WET_EXPANSION', 'HE',
+                      'check_consistency', f'wet expansion at p={p:.0f} Pa',
+                      p=p, quality=self.state_he.Q())
+                    break
             
     def retrieve_kpi(self):
         """
@@ -1908,44 +2009,85 @@ class TBORC(SBORC):
     
     def check_consistency(self):
         """
-        Check that the results are consistent.
+        Check that the results are consistent. (instrumented with diagnostics)
         """
-        if self.s_he_4x > self.s_he_4:                  self.error = True
-        if self.s_he_1x < self.s_he_1:                  self.error = True
-        if self.s_he_2  < self.s_he_1:                  self.error = True
-        if self.s_he_2  > self.s_he_3:                  self.error = True
-        if self.s_he_4  < self.s_he_3:                  self.error = True
-        if self.s_he_4x < self.s_he_1x:                 self.error = True
-        if self.T_he_2  > self.T_he_hs_ex-0.95*self.parameters['dT_he_ev_pp']: 
-            self.error = True
-        if self.T_he_3  > self.T_he_hs_su-0.95*self.parameters['dT_he_ev_pp']:
-            self.error = True
-        if self.T_he_4  < self.T_he_cs_ex+0.95*self.parameters['dT_he_cd_pp']: 
-            self.error = True
-        if self.T_he_1  < self.T_he_cs_su+0.95*self.parameters['dT_he_cd_pp']: 
-            self.error = True
-        if self.eta_he_cyclen < 0:                      self.error = True
-        if self.T_hi-self.T_wi          < 0.95*self.parameters['dT_he_ev_pp']:    
-            self.error = True
-        if self.T_he_4x-self.T_ci       < 0.95*self.parameters['dT_he_cd_pp']:    
-            self.error = True  
-        
-        if self.p_he_1x < 0.99*self.p_he_1x_min: self.error = True
-        if self.p_he_3  < 1.00*self.p_he_3_min:  self.error = True
-        
-        if abs(self.resi_1) > 1: self.error = True
-        if abs(self.resi_2) > 1: self.error = True
-        
+        f = self.fail
+        pp_ev = self.parameters['dT_he_ev_pp']
+        pp_cd = self.parameters['dT_he_cd_pp']
+
+        if f(self.s_he_4x > self.s_he_4, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4x > s_4', s_4x=self.s_he_4x, s_4=self.s_he_4):
+            return
+        if f(self.s_he_1x < self.s_he_1, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_1x < s_1', s_1x=self.s_he_1x, s_1=self.s_he_1):
+            return
+        if f(self.s_he_2 < self.s_he_1, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_2 < s_1 (transcritical)', s_2=self.s_he_2, s_1=self.s_he_1):
+            return
+        if f(self.s_he_2 > self.s_he_3, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_2 > s_3 (transcritical)', s_2=self.s_he_2, s_3=self.s_he_3):
+            return
+        if f(self.s_he_4 < self.s_he_3, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4 < s_3', s_4=self.s_he_4, s_3=self.s_he_3):
+            return
+        if f(self.s_he_4x < self.s_he_1x, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4x < s_1x', s_4x=self.s_he_4x, s_1x=self.s_he_1x):
+            return
+        if f(self.T_he_2 > self.T_he_hs_ex - 0.95 * pp_ev, 'HX_PINCH_HE_EVAP', 'HE',
+             'check_consistency', 'evaporator cold-side pinch violated',
+             T_he_2=self.T_he_2, T_he_hs_ex=self.T_he_hs_ex, min_pinch=pp_ev):
+            return
+        if f(self.T_he_3 > self.T_he_hs_su - 0.95 * pp_ev, 'HX_PINCH_HE_EVAP', 'HE',
+             'check_consistency', 'evaporator hot-side pinch violated',
+             T_he_3=self.T_he_3, T_he_hs_su=self.T_he_hs_su, min_pinch=pp_ev):
+            return
+        if f(self.T_he_4 < self.T_he_cs_ex + 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'condenser cold-side pinch violated',
+             T_he_4=self.T_he_4, T_he_cs_ex=self.T_he_cs_ex, min_pinch=pp_cd):
+            return
+        if f(self.T_he_1 < self.T_he_cs_su + 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'condenser hot-side pinch violated',
+             T_he_1=self.T_he_1, T_he_cs_su=self.T_he_cs_su, min_pinch=pp_cd):
+            return
+        if f(self.eta_he_cyclen < 0, 'EFFICIENCY_NEGATIVE', 'HE',
+             'check_consistency', 'negative ORC cycle efficiency',
+             eta_he_cyclen=self.eta_he_cyclen):
+            return
+        if f(self.T_hi - self.T_wi < 0.95 * pp_ev, 'HX_PINCH_HE_EVAP', 'HE',
+             'check_consistency', 'storage-side evaporator pinch violated',
+             T_hi=self.T_hi, T_wi=self.T_wi, min_pinch=pp_ev):
+            return
+        if f(self.T_he_4x - self.T_ci < 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'condenser recuperator pinch',
+             T_he_4x=self.T_he_4x, T_ci=self.T_ci, min_pinch=pp_cd):
+            return
+        if f(self.p_he_1x < 0.99 * self.p_he_1x_min, 'PRESSURE_BOUND_LOW', 'HE',
+             'check_consistency', 'evaporator pressure below minimum',
+             p_he_1x=self.p_he_1x, p_min=self.p_he_1x_min):
+            return
+        if f(self.p_he_3 < 1.00 * self.p_he_3_min, 'PRESSURE_BOUND_CRITICAL', 'HE',
+             'check_consistency', 'condenser pressure below minimum',
+             p_he_3=self.p_he_3, p_min=self.p_he_3_min):
+            return
+        if f(abs(self.resi_1) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
+             'check_consistency', 'residual 1 too large', residual=abs(self.resi_1)):
+            return
+        if f(abs(self.resi_2) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
+             'check_consistency', 'residual 2 too large', residual=abs(self.resi_2)):
+            return
+
         if not bool(self.parameters['wet_ex']):
-            p_vec = np.linspace(self.p_he_3,self.p_he_4)
+            p_vec = np.linspace(self.p_he_3, self.p_he_4)
             for i, p in enumerate(p_vec):
-                self.state_he.update(CoolProp.PSmass_INPUTS,p,self.s_he_3) 
+                self.state_he.update(CoolProp.PSmass_INPUTS, p, self.s_he_3)
                 h_is = self.state_he.hmass()
-                h    = self.i_he_3-self.eta_is_ex*(self.i_he_3-h_is)
-                self.state_he.update(CoolProp.HmassP_INPUTS,h,p)
+                h    = self.i_he_3 - self.eta_is_ex * (self.i_he_3 - h_is)
+                self.state_he.update(CoolProp.HmassP_INPUTS, h, p)
                 if 0 < self.state_he.Q() < 1:
-                    # print(self.state_he.Q())
-                    self.error = True
+                    f(True, 'PHASE_WET_EXPANSION', 'HE',
+                      'check_consistency', f'wet expansion at p={p:.0f} Pa',
+                      p=p, quality=self.state_he.Q())
+                    break
                 if  self.error: break
 
     def export_states(self):
@@ -2586,47 +2728,97 @@ class TRORC(TBORC):
     
     def check_consistency(self):
         """
-        Check that the results are consistent.
+        Check that the results are consistent. (instrumented with diagnostics)
         """
-        if self.s_he_4x > self.s_he_4:                  self.error = True
-        if self.s_he_4r > self.s_he_4:                  self.error = True
-        if self.s_he_4x > self.s_he_4r:                 self.error = True
-        if self.s_he_1x < self.s_he_1:                  self.error = True
-        if self.s_he_2  < self.s_he_1:                  self.error = True
-        if self.s_he_2  > self.s_he_3:                  self.error = True
-        if self.s_he_4  < self.s_he_3:                  self.error = True
-        if self.s_he_4x < self.s_he_1x:                 self.error = True
-        if self.T_he_2r > self.T_he_hs_ex-0.95*self.parameters['dT_he_ev_pp']: 
-            self.error = True
-        if self.T_he_3  > self.T_he_hs_su-0.95*self.parameters['dT_he_ev_pp']:
-            self.error = True
-        if self.T_he_4r < self.T_he_cs_ex+0.95*self.parameters['dT_he_cd_pp']: 
-            self.error = True
-        if self.T_he_1  < self.T_he_cs_su+0.95*self.parameters['dT_he_cd_pp']: 
-            self.error = True
-        if self.i_he_2r < self.i_he_2:                  self.error = True
-        if self.eta_he_cyclen < 0:                      self.error = True
-        if self.T_he_4x-self.T_ci < 0.95*self.parameters['dT_he_cd_pp']:    
-            self.error = True 
-        
-        if self.p_he_1x < 0.99*self.p_he_1x_min: self.error = True
-        if self.p_he_3  < 1.00*self.p_he_3_min:  self.error = True
-        
-        if abs(self.resi_1)   > 1: self.error = True
-        if abs(self.resi_2)   > 1: self.error = True
-        if abs(self.resi_rec) > 1: self.error = True
+        f = self.fail
+        pp_ev = self.parameters['dT_he_ev_pp']
+        pp_cd = self.parameters['dT_he_cd_pp']
+
+        if f(self.s_he_4x > self.s_he_4, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4x > s_4', s_4x=self.s_he_4x, s_4=self.s_he_4):
+            return
+        if f(self.s_he_4r > self.s_he_4, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4r > s_4 (recuperator)', s_4r=self.s_he_4r, s_4=self.s_he_4):
+            return
+        if f(self.s_he_4x > self.s_he_4r, 'RECUPERATOR_CONSTRAINT', 'HE',
+             'check_consistency', 's_4x > s_4r (recuperator cross)', s_4x=self.s_he_4x, s_4r=self.s_he_4r):
+            return
+        if f(self.s_he_1x < self.s_he_1, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_1x < s_1', s_1x=self.s_he_1x, s_1=self.s_he_1):
+            return
+        if f(self.s_he_2 < self.s_he_1, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_2 < s_1 (transcritical)', s_2=self.s_he_2, s_1=self.s_he_1):
+            return
+        if f(self.s_he_2 > self.s_he_3, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_2 > s_3 (transcritical)', s_2=self.s_he_2, s_3=self.s_he_3):
+            return
+        if f(self.s_he_4 < self.s_he_3, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4 < s_3', s_4=self.s_he_4, s_3=self.s_he_3):
+            return
+        if f(self.s_he_4x < self.s_he_1x, 'STATE_ENTROPY_ORDER', 'HE',
+             'check_consistency', 's_4x < s_1x', s_4x=self.s_he_4x, s_1x=self.s_he_1x):
+            return
+        if f(self.T_he_2r > self.T_he_hs_ex - 0.95 * pp_ev, 'HX_PINCH_HE_EVAP', 'HE',
+             'check_consistency', 'evaporator cold-side pinch (recuperator) violated',
+             T_he_2r=self.T_he_2r, T_he_hs_ex=self.T_he_hs_ex, min_pinch=pp_ev):
+            return
+        if f(self.T_he_3 > self.T_he_hs_su - 0.95 * pp_ev, 'HX_PINCH_HE_EVAP', 'HE',
+             'check_consistency', 'evaporator hot-side pinch violated',
+             T_he_3=self.T_he_3, T_he_hs_su=self.T_he_hs_su, min_pinch=pp_ev):
+            return
+        if f(self.T_he_4r < self.T_he_cs_ex + 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'condenser cold-side pinch (recuperator) violated',
+             T_he_4r=self.T_he_4r, T_he_cs_ex=self.T_he_cs_ex, min_pinch=pp_cd):
+            return
+        if f(self.T_he_1 < self.T_he_cs_su + 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'condenser hot-side pinch violated',
+             T_he_1=self.T_he_1, T_he_cs_su=self.T_he_cs_su, min_pinch=pp_cd):
+            return
+        if f(self.i_he_2r < self.i_he_2, 'RECUPERATOR_CONSTRAINT', 'HE',
+             'check_consistency', 'recuperator enthalpy cross',
+             i_he_2r=self.i_he_2r, i_he_2=self.i_he_2):
+            return
+        if f(self.eta_he_cyclen < 0, 'EFFICIENCY_NEGATIVE', 'HE',
+             'check_consistency', 'negative ORC cycle efficiency',
+             eta_he_cyclen=self.eta_he_cyclen):
+            return
+        if f(self.T_he_4x - self.T_ci < 0.95 * pp_cd, 'HX_PINCH_HE_COND', 'HE',
+             'check_consistency', 'recuperator/storage condenser pinch',
+             T_he_4x=self.T_he_4x, T_ci=self.T_ci, min_pinch=pp_cd):
+            return
+        if f(self.p_he_1x < 0.99 * self.p_he_1x_min, 'PRESSURE_BOUND_LOW', 'HE',
+             'check_consistency', 'evaporator pressure below minimum',
+             p_he_1x=self.p_he_1x, p_min=self.p_he_1x_min):
+            return
+        if f(self.p_he_3 < 1.00 * self.p_he_3_min, 'PRESSURE_BOUND_CRITICAL', 'HE',
+             'check_consistency', 'condenser pressure below minimum',
+             p_he_3=self.p_he_3, p_min=self.p_he_3_min):
+            return
+        if f(abs(self.resi_1) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
+             'check_consistency', 'residual 1 too large', residual=abs(self.resi_1)):
+            return
+        if f(abs(self.resi_2) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
+             'check_consistency', 'residual 2 too large', residual=abs(self.resi_2)):
+            return
+        if f(abs(self.resi_rec) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
+             'check_consistency', 'recuperator residual too large',
+             residual=abs(self.resi_rec)):
+            return
         
         if not bool(self.parameters['wet_ex']):
-            p_vec = np.linspace(self.p_he_3,self.p_he_4)
+            p_vec = np.linspace(self.p_he_3, self.p_he_4)
             for i, p in enumerate(p_vec):
-                self.state_he.update(CoolProp.PSmass_INPUTS,p,self.s_he_3) 
+                self.state_he.update(CoolProp.PSmass_INPUTS, p, self.s_he_3)
                 h_is = self.state_he.hmass()
-                h    = self.i_he_3-self.eta_is_ex*(self.i_he_3-h_is)
-                self.state_he.update(CoolProp.HmassP_INPUTS,h,p)
+                h    = self.i_he_3 - self.eta_is_ex * (self.i_he_3 - h_is)
+                self.state_he.update(CoolProp.HmassP_INPUTS, h, p)
                 if 0 < self.state_he.Q() < 1:
-                    self.error = True
-                if  self.error: break
-    
+                    f(True, 'PHASE_WET_EXPANSION', 'HE',
+                      'check_consistency', f'wet expansion at p={p:.0f} Pa',
+                      p=p, quality=self.state_he.Q())
+                    break
+                if self.error: break
+
     def retrieve_kpi(self):
         """
         Retrieve the KPI's of the TRORC

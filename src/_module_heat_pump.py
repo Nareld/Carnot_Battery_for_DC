@@ -19,12 +19,15 @@ from   CoolProp import AbstractState
 
 import os
 import sys
+
+# ── CBSim diagnostics (non-intrusive, does not alter thermodynamic calculations) ──
+from _module_diagnostics import DiagnosticMixin
 SIMULATOR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(SIMULATOR,'COMPONENTS'))
 
 #%% MODEL: SBVCHP
 
-class SBVCHP:
+class SBVCHP(DiagnosticMixin):
     """
     Class for the simulation of Subcritical Basic Vapor Compression Heat Pumps.
 
@@ -115,28 +118,35 @@ class SBVCHP:
         """
         Evaluate the SBVCHP cycle for the given boundary conditions.
         """
-        
+
         self.error = True
-        
+        self._init_diagnostics()
+
         if self.parameters['version'] not in ['thermodynamic_full',
                                               'operational_light']:
+            self._add_issue('PARAM_INVALID_VERSION', 'HP', 'evaluate',
+                          f'version={self.parameters.get("version")} is invalid')
             raise ValueError('An inconsistency was detected!\
                               In: '+os.path.join(os.path.abspath(__file__),
                 'SBVCHP','evaluate: parameters["version"] is not valid'))
-        
+
         if self.parameters['version'] == 'thermodynamic_full'\
         or self.parameters['version'] == 'operational_light':
             if self.options['debug']:
                 self.evaluate_cycle()
                 self.error = False
             else:
-                try:    
+                try:
                     self.error = False
                     self.evaluate_cycle()
                     self.check_consistency()
-                except: self.error = True
-        
-        if self.error == True: 
+                except Exception as exc:
+                    self._add_issue('EVALUATE_CYCLE_EXCEPTION', 'HP', 'evaluate',
+                                  f'{type(exc).__name__}: {str(exc)[:200]}',
+                                  exception_type=type(exc).__name__)
+                    self.error = True
+
+        if self.error == True:
             raise ValueError('An inconsistency was detected in the cycle!\
                               In: '+os.path.join(os.path.abspath(__file__),
                               'SBVCHP','check_consistency'))
@@ -503,29 +513,67 @@ class SBVCHP:
     
     def check_consistency(self):
         """
-        Check that the results are consistent.
+        Check that the results are consistent. (instrumented with diagnostics)
         """
-        if self.s_hp_1x>self.s_hp_1:  self.error=True
-        if self.s_hp_2x>self.s_hp_2:  self.error=True
-        if self.s_hp_3x<self.s_hp_3:  self.error=True
-        if self.s_hp_4 <self.s_hp_3:  self.error=True
-        if self.s_hp_3x>self.s_hp_2x: self.error=True
-        if self.s_hp_4x>self.s_hp_1x: self.error=True
-        if self.x_hp_4 <0:            self.error=True
-        if self.eta_hp_cyclen < 0:    self.error=True
-        if self.T_hp_4>self.T_hp_cs_ex-0.95*self.parameters['dT_hp_ev_pp']:
-            self.error=True
-        if self.T_hp_1>self.T_hp_cs_su-0.95*self.parameters['dT_hp_ev_pp']:
-            self.error=True
-        if self.T_hp_2<self.T_hp_hs_ex+0.95*self.parameters['dT_hp_cd_pp']:
-            self.error=True
-        if self.T_hp_3<self.T_hp_hs_su+0.95*self.parameters['dT_hp_cd_pp']:
-            self.error=True
-        if self.T_wi  <self.T_hi      +0.95*self.parameters['dT_hp_cd_pp']:
-            self.error = True   
-        if abs(self.resi) > 1:              self.error = True
-        if self.p_hp_2x < self.p_hp_2x_min: self.error = True
-    
+        f = self.fail  # shorthand
+        pp_ev = self.parameters['dT_hp_ev_pp']
+        pp_cd = self.parameters['dT_hp_cd_pp']
+
+        if f(self.s_hp_1x > self.s_hp_1, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_1x > s_1', s_1x=self.s_hp_1x, s_1=self.s_hp_1):
+            return
+        if f(self.s_hp_2x > self.s_hp_2, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_2x > s_2', s_2x=self.s_hp_2x, s_2=self.s_hp_2):
+            return
+        if f(self.s_hp_3x < self.s_hp_3, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_3x < s_3', s_3x=self.s_hp_3x, s_3=self.s_hp_3):
+            return
+        if f(self.s_hp_4 < self.s_hp_3, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_4 < s_3', s_4=self.s_hp_4, s_3=self.s_hp_3):
+            return
+        if f(self.s_hp_3x > self.s_hp_2x, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_3x > s_2x', s_3x=self.s_hp_3x, s_2x=self.s_hp_2x):
+            return
+        if f(self.s_hp_4x > self.s_hp_1x, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_4x > s_1x', s_4x=self.s_hp_4x, s_1x=self.s_hp_1x):
+            return
+        if f(self.x_hp_4 < 0, 'PHASE_TWO_PHASE_COMPRESSION', 'HP',
+             'check_consistency', 'compressor inlet quality < 0 (wet compression)',
+             x_hp_4=self.x_hp_4):
+            return
+        if f(self.eta_hp_cyclen < 0, 'EFFICIENCY_NEGATIVE', 'HP',
+             'check_consistency', 'negative HP cycle efficiency',
+             eta_hp_cyclen=self.eta_hp_cyclen):
+            return
+        if f(self.T_hp_4 > self.T_hp_cs_ex - 0.95 * pp_ev, 'HX_PINCH_HP_EVAP', 'HP',
+             'check_consistency', 'evaporator cold-side pinch violated',
+             T_hp_4=self.T_hp_4, T_hp_cs_ex=self.T_hp_cs_ex, min_pinch=pp_ev):
+            return
+        if f(self.T_hp_1 > self.T_hp_cs_su - 0.95 * pp_ev, 'HX_PINCH_HP_EVAP', 'HP',
+             'check_consistency', 'evaporator hot-side pinch violated',
+             T_hp_1=self.T_hp_1, T_hp_cs_su=self.T_hp_cs_su, min_pinch=pp_ev):
+            return
+        if f(self.T_hp_2 < self.T_hp_hs_ex + 0.95 * pp_cd, 'HX_PINCH_HP_COND', 'HP',
+             'check_consistency', 'condenser cold-side pinch violated',
+             T_hp_2=self.T_hp_2, T_hp_hs_ex=self.T_hp_hs_ex, min_pinch=pp_cd):
+            return
+        if f(self.T_hp_3 < self.T_hp_hs_su + 0.95 * pp_cd, 'HX_PINCH_HP_COND', 'HP',
+             'check_consistency', 'condenser hot-side pinch violated',
+             T_hp_3=self.T_hp_3, T_hp_hs_su=self.T_hp_hs_su, min_pinch=pp_cd):
+            return
+        if f(self.T_wi < self.T_hi + 0.95 * pp_cd, 'HX_PINCH_HP_COND', 'HP',
+             'check_consistency', 'storage-side condenser pinch violated',
+             T_wi=self.T_wi, T_hi=self.T_hi, min_pinch=pp_cd):
+            return
+        if f(abs(self.resi) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HP',
+             'check_consistency', f'mass/energy residual too large',
+             residual=abs(self.resi)):
+            return
+        if f(self.p_hp_2x < self.p_hp_2x_min, 'PRESSURE_BOUND_LOW', 'HP',
+             'check_consistency', 'condenser pressure below minimum',
+             p_hp_2x=self.p_hp_2x, p_min=self.p_hp_2x_min):
+            return
+
     def retrieve_kpi(self):
         """
         Retrieve the KPI's of the heat pump.
@@ -1108,33 +1156,76 @@ class SRVCHP(SBVCHP):
     
     def check_consistency(self):
         """
-        Check that the results are consistent.
+        Check that the results are consistent. (instrumented with diagnostics)
         """
-        if self.s_hp_1x>self.s_hp_1:  self.error=True
-        if self.s_hp_1 >self.s_hp_1r: self.error=True
-        if self.s_hp_2x>self.s_hp_2:  self.error=True
-        if self.s_hp_3x<self.s_hp_3:  self.error=True
-        if self.s_hp_3 <self.s_hp_3r: self.error=True
-        if self.s_hp_4 <self.s_hp_3r: self.error=True
-        if self.s_hp_3x>self.s_hp_2x: self.error=True
-        if self.s_hp_4x>self.s_hp_1x: self.error=True
-        if self.x_hp_4 <0:            self.error=True
-        if self.eta_hp_cyclen < 0:    self.error=True
-        if self.T_hp_4>self.T_hp_cs_ex-0.95*self.parameters['dT_hp_ev_pp']:
-            self.error=True
-        if self.T_hp_1>self.T_hp_cs_su-0.95*self.parameters['dT_hp_ev_pp']:
-            self.error=True
-        if self.T_hp_2<self.T_hp_hs_ex+0.95*self.parameters['dT_hp_cd_pp']:
-            self.error=True
-        if self.T_hp_3<self.T_hp_hs_su+0.95*self.parameters['dT_hp_cd_pp']:
-            self.error=True
-        if self.T_wi  <self.T_hi      +0.95*self.parameters['dT_hp_cd_pp']:
-            self.error = True  
-        if self.T_hp_1r>self.T_hp_3   -0.95*self.parameters['dT_hp_cd_pp']:#!!!
-            self.error = True
-            
-        if abs(self.resi) > 1:              self.error = True
-        if self.p_hp_2x < self.p_hp_2x_min: self.error = True 
+        f = self.fail
+        pp_ev = self.parameters['dT_hp_ev_pp']
+        pp_cd = self.parameters['dT_hp_cd_pp']
+
+        if f(self.s_hp_1x > self.s_hp_1, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_1x > s_1', s_1x=self.s_hp_1x, s_1=self.s_hp_1):
+            return
+        if f(self.s_hp_1 > self.s_hp_1r, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_1 > s_1r (recuperator)', s_1=self.s_hp_1, s_1r=self.s_hp_1r):
+            return
+        if f(self.s_hp_2x > self.s_hp_2, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_2x > s_2', s_2x=self.s_hp_2x, s_2=self.s_hp_2):
+            return
+        if f(self.s_hp_3x < self.s_hp_3, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_3x < s_3', s_3x=self.s_hp_3x, s_3=self.s_hp_3):
+            return
+        if f(self.s_hp_3 < self.s_hp_3r, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_3 < s_3r (recuperator)', s_3=self.s_hp_3, s_3r=self.s_hp_3r):
+            return
+        if f(self.s_hp_4 < self.s_hp_3r, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_4 < s_3r (recuperator)', s_4=self.s_hp_4, s_3r=self.s_hp_3r):
+            return
+        if f(self.s_hp_3x > self.s_hp_2x, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_3x > s_2x', s_3x=self.s_hp_3x, s_2x=self.s_hp_2x):
+            return
+        if f(self.s_hp_4x > self.s_hp_1x, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_4x > s_1x', s_4x=self.s_hp_4x, s_1x=self.s_hp_1x):
+            return
+        if f(self.x_hp_4 < 0, 'PHASE_TWO_PHASE_COMPRESSION', 'HP',
+             'check_consistency', 'compressor inlet quality < 0',
+             x_hp_4=self.x_hp_4):
+            return
+        if f(self.eta_hp_cyclen < 0, 'EFFICIENCY_NEGATIVE', 'HP',
+             'check_consistency', 'negative HP cycle efficiency',
+             eta_hp_cyclen=self.eta_hp_cyclen):
+            return
+        if f(self.T_hp_4 > self.T_hp_cs_ex - 0.95 * pp_ev, 'HX_PINCH_HP_EVAP', 'HP',
+             'check_consistency', 'evaporator cold-side pinch violated',
+             T_hp_4=self.T_hp_4, T_hp_cs_ex=self.T_hp_cs_ex, min_pinch=pp_ev):
+            return
+        if f(self.T_hp_1 > self.T_hp_cs_su - 0.95 * pp_ev, 'HX_PINCH_HP_EVAP', 'HP',
+             'check_consistency', 'evaporator hot-side pinch violated',
+             T_hp_1=self.T_hp_1, T_hp_cs_su=self.T_hp_cs_su, min_pinch=pp_ev):
+            return
+        if f(self.T_hp_2 < self.T_hp_hs_ex + 0.95 * pp_cd, 'HX_PINCH_HP_COND', 'HP',
+             'check_consistency', 'condenser cold-side pinch violated',
+             T_hp_2=self.T_hp_2, T_hp_hs_ex=self.T_hp_hs_ex, min_pinch=pp_cd):
+            return
+        if f(self.T_hp_3 < self.T_hp_hs_su + 0.95 * pp_cd, 'HX_PINCH_HP_COND', 'HP',
+             'check_consistency', 'condenser hot-side pinch violated',
+             T_hp_3=self.T_hp_3, T_hp_hs_su=self.T_hp_hs_su, min_pinch=pp_cd):
+            return
+        if f(self.T_wi < self.T_hi + 0.95 * pp_cd, 'HX_PINCH_HP_COND', 'HP',
+             'check_consistency', 'storage-side condenser pinch violated',
+             T_wi=self.T_wi, T_hi=self.T_hi, min_pinch=pp_cd):
+            return
+        if f(self.T_hp_1r > self.T_hp_3 - 0.95 * pp_cd, 'RECUPERATOR_CONSTRAINT', 'HP',
+             'check_consistency', 'recuperator temperature cross',
+             T_hp_1r=self.T_hp_1r, T_hp_3=self.T_hp_3, min_delta=pp_cd):
+            return
+        if f(abs(self.resi) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HP',
+             'check_consistency', f'mass/energy residual too large',
+             residual=abs(self.resi)):
+            return
+        if f(self.p_hp_2x < self.p_hp_2x_min, 'PRESSURE_BOUND_LOW', 'HP',
+             'check_consistency', 'condenser pressure below minimum',
+             p_hp_2x=self.p_hp_2x, p_min=self.p_hp_2x_min):
+            return
     
     def retrieve_kpi(self):
         """
@@ -1749,26 +1840,59 @@ class TBVCHP(SBVCHP):
     
     def check_consistency(self):
         """
-        Check that the results are consistent.
+        Check that the results are consistent. (instrumented with diagnostics)
         """
-        if self.s_hp_1x>self.s_hp_1:  self.error=True
-        if self.s_hp_1 >self.s_hp_2:  self.error=True
-        if self.s_hp_2 <self.s_hp_3:  self.error=True
-        if self.s_hp_4 <self.s_hp_3:  self.error=True
-        if self.s_hp_4x>self.s_hp_1x: self.error=True
-        if self.x_hp_4 <0:            self.error=True
-        if self.eta_hp_cyclen < 0:    self.error=True
-        if self.T_hp_4>self.T_hp_cs_ex-0.95*self.parameters['dT_hp_ev_pp']:
-            self.error=True
-        if self.T_hp_1>self.T_hp_cs_su-0.95*self.parameters['dT_hp_ev_pp']:
-            self.error=True
-        if self.T_hp_2<self.T_hp_hs_ex+0.95*self.parameters['dT_hp_cd_pp']:
-            self.error=True
-        if self.T_hp_3<self.T_hp_hs_su+0.95*self.parameters['dT_hp_cd_pp']:
-            self.error=True
-            
-        if abs(self.resi) > 1:            self.error = True
-        if self.p_hp_2 < self.p_hp_2_min: self.error = True
+        f = self.fail
+        pp_ev = self.parameters['dT_hp_ev_pp']
+        pp_cd = self.parameters['dT_hp_cd_pp']
+
+        if f(self.s_hp_1x > self.s_hp_1, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_1x > s_1', s_1x=self.s_hp_1x, s_1=self.s_hp_1):
+            return
+        if f(self.s_hp_1 > self.s_hp_2, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_1 > s_2 (transcritical)', s_1=self.s_hp_1, s_2=self.s_hp_2):
+            return
+        if f(self.s_hp_2 < self.s_hp_3, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_2 < s_3 (transcritical)', s_2=self.s_hp_2, s_3=self.s_hp_3):
+            return
+        if f(self.s_hp_4 < self.s_hp_3, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_4 < s_3', s_4=self.s_hp_4, s_3=self.s_hp_3):
+            return
+        if f(self.s_hp_4x > self.s_hp_1x, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_4x > s_1x', s_4x=self.s_hp_4x, s_1x=self.s_hp_1x):
+            return
+        if f(self.x_hp_4 < 0, 'PHASE_TWO_PHASE_COMPRESSION', 'HP',
+             'check_consistency', 'compressor inlet quality < 0',
+             x_hp_4=self.x_hp_4):
+            return
+        if f(self.eta_hp_cyclen < 0, 'EFFICIENCY_NEGATIVE', 'HP',
+             'check_consistency', 'negative HP cycle efficiency',
+             eta_hp_cyclen=self.eta_hp_cyclen):
+            return
+        if f(self.T_hp_4 > self.T_hp_cs_ex - 0.95 * pp_ev, 'HX_PINCH_HP_EVAP', 'HP',
+             'check_consistency', 'evaporator cold-side pinch violated',
+             T_hp_4=self.T_hp_4, T_hp_cs_ex=self.T_hp_cs_ex, min_pinch=pp_ev):
+            return
+        if f(self.T_hp_1 > self.T_hp_cs_su - 0.95 * pp_ev, 'HX_PINCH_HP_EVAP', 'HP',
+             'check_consistency', 'evaporator hot-side pinch violated',
+             T_hp_1=self.T_hp_1, T_hp_cs_su=self.T_hp_cs_su, min_pinch=pp_ev):
+            return
+        if f(self.T_hp_2 < self.T_hp_hs_ex + 0.95 * pp_cd, 'HX_PINCH_HP_COND', 'HP',
+             'check_consistency', 'condenser cold-side pinch violated',
+             T_hp_2=self.T_hp_2, T_hp_hs_ex=self.T_hp_hs_ex, min_pinch=pp_cd):
+            return
+        if f(self.T_hp_3 < self.T_hp_hs_su + 0.95 * pp_cd, 'HX_PINCH_HP_COND', 'HP',
+             'check_consistency', 'condenser hot-side pinch violated',
+             T_hp_3=self.T_hp_3, T_hp_hs_su=self.T_hp_hs_su, min_pinch=pp_cd):
+            return
+        if f(abs(self.resi) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HP',
+             'check_consistency', f'mass/energy residual too large',
+             residual=abs(self.resi)):
+            return
+        if f(self.p_hp_2 < self.p_hp_2_min, 'PRESSURE_BOUND_LOW', 'HP',
+             'check_consistency', 'pressure below minimum',
+             p_hp_2=self.p_hp_2, p_min=self.p_hp_2_min):
+            return
     
     def export_states(self):
         """
@@ -2326,31 +2450,66 @@ class TRVCHP(TBVCHP):
     
     def check_consistency(self):
         """
-        Check that the results are consistent.
+        Check that the results are consistent. (instrumented with diagnostics)
         """
-        
-        if self.s_hp_1x>self.s_hp_1:  self.error=True
-        if self.s_hp_1 >self.s_hp_1r: self.error=True        
-        if self.s_hp_2 <self.s_hp_3:  self.error=True
-        if self.s_hp_3 <self.s_hp_3r: self.error=True
-        if self.s_hp_4 <self.s_hp_3r: self.error=True
-        if self.s_hp_4x>self.s_hp_1x: self.error=True
-        if self.x_hp_4 <0:            self.error=True
-        if self.eta_hp_cyclen < 0:    self.error=True
-        
-        if self.T_hp_4>self.T_hp_cs_ex-0.95*self.parameters['dT_hp_ev_pp']:
-            self.error=True
-        if self.T_hp_1>self.T_hp_cs_su-0.95*self.parameters['dT_hp_ev_pp']:
-            self.error=True
-        if self.T_hp_2<self.T_hp_hs_ex+0.95*self.parameters['dT_hp_cd_pp']:
-            self.error=True
-        if self.T_hp_3<self.T_hp_hs_su+0.95*self.parameters['dT_hp_cd_pp']:
-            self.error=True
-        if self.T_hp_1r>self.T_hp_3   -0.95*self.parameters['dT_hp_cd_pp']:#!!!
-            self.error = True
-        
-        if abs(self.resi) > 1:              self.error = True
-        if self.p_hp_2 < self.p_hp_2_min:   self.error = True
+        f = self.fail
+        pp_ev = self.parameters['dT_hp_ev_pp']
+        pp_cd = self.parameters['dT_hp_cd_pp']
+
+        if f(self.s_hp_1x > self.s_hp_1, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_1x > s_1', s_1x=self.s_hp_1x, s_1=self.s_hp_1):
+            return
+        if f(self.s_hp_1 > self.s_hp_1r, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_1 > s_1r (recuperator)', s_1=self.s_hp_1, s_1r=self.s_hp_1r):
+            return
+        if f(self.s_hp_2 < self.s_hp_3, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_2 < s_3 (transcritical)', s_2=self.s_hp_2, s_3=self.s_hp_3):
+            return
+        if f(self.s_hp_3 < self.s_hp_3r, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_3 < s_3r (recuperator)', s_3=self.s_hp_3, s_3r=self.s_hp_3r):
+            return
+        if f(self.s_hp_4 < self.s_hp_3r, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_4 < s_3r (recuperator)', s_4=self.s_hp_4, s_3r=self.s_hp_3r):
+            return
+        if f(self.s_hp_4x > self.s_hp_1x, 'STATE_ENTROPY_ORDER', 'HP',
+             'check_consistency', 's_4x > s_1x', s_4x=self.s_hp_4x, s_1x=self.s_hp_1x):
+            return
+        if f(self.x_hp_4 < 0, 'PHASE_TWO_PHASE_COMPRESSION', 'HP',
+             'check_consistency', 'compressor inlet quality < 0',
+             x_hp_4=self.x_hp_4):
+            return
+        if f(self.eta_hp_cyclen < 0, 'EFFICIENCY_NEGATIVE', 'HP',
+             'check_consistency', 'negative HP cycle efficiency',
+             eta_hp_cyclen=self.eta_hp_cyclen):
+            return
+        if f(self.T_hp_4 > self.T_hp_cs_ex - 0.95 * pp_ev, 'HX_PINCH_HP_EVAP', 'HP',
+             'check_consistency', 'evaporator cold-side pinch violated',
+             T_hp_4=self.T_hp_4, T_hp_cs_ex=self.T_hp_cs_ex, min_pinch=pp_ev):
+            return
+        if f(self.T_hp_1 > self.T_hp_cs_su - 0.95 * pp_ev, 'HX_PINCH_HP_EVAP', 'HP',
+             'check_consistency', 'evaporator hot-side pinch violated',
+             T_hp_1=self.T_hp_1, T_hp_cs_su=self.T_hp_cs_su, min_pinch=pp_ev):
+            return
+        if f(self.T_hp_2 < self.T_hp_hs_ex + 0.95 * pp_cd, 'HX_PINCH_HP_COND', 'HP',
+             'check_consistency', 'condenser cold-side pinch violated',
+             T_hp_2=self.T_hp_2, T_hp_hs_ex=self.T_hp_hs_ex, min_pinch=pp_cd):
+            return
+        if f(self.T_hp_3 < self.T_hp_hs_su + 0.95 * pp_cd, 'HX_PINCH_HP_COND', 'HP',
+             'check_consistency', 'condenser hot-side pinch violated',
+             T_hp_3=self.T_hp_3, T_hp_hs_su=self.T_hp_hs_su, min_pinch=pp_cd):
+            return
+        if f(self.T_hp_1r > self.T_hp_3 - 0.95 * pp_cd, 'RECUPERATOR_CONSTRAINT', 'HP',
+             'check_consistency', 'recuperator temperature cross',
+             T_hp_1r=self.T_hp_1r, T_hp_3=self.T_hp_3, min_delta=pp_cd):
+            return
+        if f(abs(self.resi) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HP',
+             'check_consistency', f'mass/energy residual too large',
+             residual=abs(self.resi)):
+            return
+        if f(self.p_hp_2 < self.p_hp_2_min, 'PRESSURE_BOUND_LOW', 'HP',
+             'check_consistency', 'pressure below minimum',
+             p_hp_2=self.p_hp_2, p_min=self.p_hp_2_min):
+            return
     
     def retrieve_kpi(self):
         """

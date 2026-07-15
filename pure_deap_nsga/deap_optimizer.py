@@ -264,6 +264,11 @@ class CBEvaluator:
         self.T_hp_cs = wp['T_hs']   # °C
         self.T_he_cs = wp['T_cs']   # °C
 
+        # ── Diagnostics (non-intrusive) ──────────────────────────────────
+        self.diagnostics_enabled = cfg.get('diagnostics_enabled', False)
+        self.last_eval_info: Dict = {}
+        self.diagnostics_records: List[Dict] = []
+
         # Decision variable bounds
         self.lb = np.array([
             wp['T_st_ht_min'],   # T_st_ht [°C]
@@ -369,24 +374,109 @@ class CBEvaluator:
         Evaluate objectives for decision vector x.
         Returns tuple of objective values (all maximized).
         Infeasible → all INFEASIBLE_PENALTY.
+        Diagnostics recorded when cfg['diagnostics_enabled']=True.
         """
+        diag_on = self.diagnostics_enabled
+        decoded = self.decode(x) if hasattr(self, 'decode') else {}
+        base_info = {
+            'feasible': False, 'penalized': True,
+            'primary_code': None, 'issues': [],
+            'decoded': decoded,
+            'cb_class': self.cb_class.__name__,
+            'fluid_hp': self.fluid_hp, 'fluid_he': self.fluid_he,
+        }
+
         # Quick feasibility pre-check
         T_st_ht = x[0]
         if T_st_ht <= self.T_hp_cs + 5.0:
+            base_info['primary_code'] = 'OPT_PRECHECK_STORAGE_TEMP_TOO_LOW'
+            if diag_on:
+                base_info['issues'] = [{
+                    'code': 'OPT_PRECHECK_STORAGE_TEMP_TOO_LOW',
+                    'component': 'optimizer', 'cls': 'CBEvaluator', 'method': 'evaluate',
+                    'message': f'T_st_ht={T_st_ht} <= T_hp_cs+5={self.T_hp_cs+5.0}',
+                    'severity': 'error',
+                    'values': {'T_st_ht': T_st_ht, 'threshold': self.T_hp_cs + 5.0},
+                }]
+            self._record_eval(base_info)
             return tuple(INFEASIBLE_PENALTY for _ in self.objectives)
 
+        my_cb = None
         try:
             inputs, params, options = self._build_inputs_params(x)
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                my_cb = self.cb_class(inputs, params, options)
-                my_cb.evaluate()
+
+            if diag_on:
+                with warnings.catch_warnings(record=True) as caught_warnings:
+                    warnings.simplefilter('always')
+                    my_cb = self.cb_class(inputs, params, options)
+                    my_cb.evaluate()
+                # Summarize warnings when diagnostics enabled
+                if caught_warnings:
+                    warn_counts = {}
+                    for w in caught_warnings:
+                        if 'fsolve' in str(w.message) or 'least_squares' in str(w.message):
+                            key = 'SOLVER_FSOLVE_FAILED'
+                        elif 'minimize' in str(w.message):
+                            key = 'SOLVER_MINIMIZE_FAILED'
+                        else:
+                            key = 'SOLVER_WARNING'
+                        warn_counts[key] = warn_counts.get(key, 0) + 1
+                    # Store summarized warning counts
+                    base_info['warning_summary'] = warn_counts
+                    # Only store first 3 distinct warnings as issues
+                    seen = set()
+                    for w in caught_warnings:
+                        wmsg_short = str(w.message)[:80]
+                        if wmsg_short not in seen:
+                            seen.add(wmsg_short)
+                            code = 'SOLVER_FSOLVE_FAILED' if 'fsolve' in str(w.message) or 'least_squares' in str(w.message) else \
+                                   'SOLVER_MINIMIZE_FAILED' if 'minimize' in str(w.message) else 'SOLVER_WARNING'
+                            base_info['issues'].append({
+                                'code': code, 'component': 'optimizer',
+                                'cls': self.cb_class.__name__, 'method': 'evaluate',
+                                'message': str(w.message)[:200], 'severity': 'warning',
+                                'values': {},
+                            })
+                        if len(seen) >= 3:
+                            break
+            else:
+                # Lightweight: suppress warnings, no capture
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    my_cb = self.cb_class(inputs, params, options)
+                    my_cb.evaluate()
 
             if my_cb.error:
+                if diag_on and hasattr(my_cb, 'get_diagnostics'):
+                    cb_diag = my_cb.get_diagnostics()
+                    # Recompute primary to prioritize cause codes over wrappers
+                    cb_diag.recompute_primary()
+                    base_info['primary_code'] = cb_diag.primary_code
+                    base_info['issues'].extend(cb_diag.to_dict().get('issues', []))
+                else:
+                    if diag_on:
+                        base_info['primary_code'] = 'CB_SOLVER_ERROR'
+                        base_info['issues'].append({
+                            'code': 'CB_SOLVER_ERROR', 'component': 'CB',
+                            'cls': self.cb_class.__name__, 'method': 'evaluate',
+                            'message': 'CBSim solver returned error=True',
+                            'severity': 'error', 'values': {},
+                        })
+                self._record_eval(base_info)
                 return tuple(INFEASIBLE_PENALTY for _ in self.objectives)
 
             # Sanity check on key outputs
             if not (0.01 < my_cb.eta_cb_elec < 1.0):
+                base_info['primary_code'] = 'KPI_SANITY_ETA_P2P_RANGE'
+                if diag_on:
+                    base_info['issues'].append({
+                        'code': 'KPI_SANITY_ETA_P2P_RANGE', 'component': 'optimizer',
+                        'cls': 'CBEvaluator', 'method': 'evaluate',
+                        'message': f'eta_cb_elec={my_cb.eta_cb_elec} outside (0.01, 1.0)',
+                        'severity': 'error',
+                        'values': {'eta_cb_elec': my_cb.eta_cb_elec},
+                    })
+                self._record_eval(base_info)
                 return tuple(INFEASIBLE_PENALTY for _ in self.objectives)
 
             results = []
@@ -397,10 +487,37 @@ class CBEvaluator:
                 else:
                     val = fn(my_cb)
                 results.append(float(val))
+
+            base_info['feasible'] = True
+            base_info['penalized'] = False
+            self._record_eval(base_info)
             return tuple(results)
 
-        except Exception:
+        except Exception as e:
+            if diag_on and my_cb is not None and hasattr(my_cb, 'get_diagnostics'):
+                cb_diag = my_cb.get_diagnostics()
+                cb_diag.recompute_primary()
+                if cb_diag.primary_code:
+                    base_info['primary_code'] = cb_diag.primary_code
+                    base_info['issues'].extend(cb_diag.to_dict().get('issues', []))
+            if base_info['primary_code'] is None:
+                base_info['primary_code'] = 'UNKNOWN_EXCEPTION'
+            if diag_on:
+                base_info['issues'].append({
+                    'code': 'UNKNOWN_EXCEPTION', 'component': 'optimizer',
+                    'cls': 'CBEvaluator', 'method': 'evaluate',
+                    'message': f'{type(e).__name__}: {str(e)[:200]}',
+                    'severity': 'error',
+                    'values': {'exception_type': type(e).__name__},
+                })
+            self._record_eval(base_info)
             return tuple(INFEASIBLE_PENALTY for _ in self.objectives)
+
+    def _record_eval(self, info: Dict):
+        """Record evaluation info if diagnostics enabled."""
+        self.last_eval_info = info
+        if self.diagnostics_enabled:
+            self.diagnostics_records.append(dict(info))
 
 
 # ============================================================================
