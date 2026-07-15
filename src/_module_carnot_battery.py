@@ -19,9 +19,12 @@ sys.path.insert(0, os.path.join(SIMULATOR,'COMPONENTS'))
 import _module_heat_pump   as HP
 import _module_heat_engine as HE
 
+# ── CBSim diagnostics (non-intrusive, does not alter thermodynamic calculations) ──
+from _module_diagnostics import DiagnosticMixin
+
 #%% 0: SBVCHP_SBORC_STES2T
 
-class SBVCHP_SBORC_STES2T:
+class SBVCHP_SBORC_STES2T(DiagnosticMixin):
     """
     Class for the simulation of Carnot Batteries based on:
         - Subcritical Basic Vapor Compression Heat Pumps
@@ -87,34 +90,78 @@ class SBVCHP_SBORC_STES2T:
     
     def evaluate(self):
         """
-        Evaluate the SBVCHP_SBORC_SHS2T cycle for the given boundary 
+        Evaluate the SBVCHP_SBORC_SHS2T cycle for the given boundary
         conditions.
         """
-        
+
         self.error = True
-        
+        self._init_diagnostics()
+
         if self.parameters['version'] not in ['thermodynamic_full',
                                               'operational_light']:
+            self._add_issue('PARAM_INVALID_VERSION', 'CB', 'evaluate',
+                          f'version={self.parameters.get("version")} is invalid')
             raise ValueError('An inconsistency was detected!\
                               In: '+os.path.join(os.path.abspath(__file__),
           'SBVCHP_SBORC_SHS2T','evaluate: parameters["version"] is not valid'))
-        
+
         if self.parameters['version'] == 'thermodynamic_full'\
         or self.parameters['version'] == 'operational_light':
             if self.options['debug']:
                 self.evaluate_cycle()
                 self.error = False
             else:
-                try:    
+                try:
                     self.error = False
                     self.evaluate_cycle()
                     self.check_consistency()
-                except: self.error = True
+                except Exception as exc:
+                    self._add_issue('EVALUATE_CYCLE_EXCEPTION', 'CB', 'evaluate',
+                                  f'{type(exc).__name__}: {str(exc)[:200]}',
+                                  exception_type=type(exc).__name__)
+                    self.error = True
 
-        if self.error == True: 
+        if self.error == True:
             raise ValueError('An inconsistency was detected in the cycle!\
                               In: '+os.path.join(os.path.abspath(__file__),
                               'SBVCHP_SBORC_SHS2T','check_consistency'))
+
+    def get_diagnostics(self):
+        """Return aggregated diagnostics including HP and HE children.
+
+        Creates a merged copy — does NOT mutate self.diagnostics in place,
+        so repeated calls don't accumulate duplicates.
+        Primary code is recomputed with cause-over-wrapper priority.
+        """
+        from _module_diagnostics import SolverDiagnostic, SolverIssue
+
+        merged = SolverDiagnostic()
+        # Add CB's own issues first
+        for issue in self.diagnostics.issues:
+            merged.add(SolverIssue(
+                code=issue.code, component=issue.component, cls=issue.cls,
+                method=issue.method, message=issue.message,
+                severity=issue.severity, values=dict(issue.values),
+            ))
+        # Add HP child issues
+        if hasattr(self, 'my_HP') and hasattr(self.my_HP, 'diagnostics'):
+            for issue in self.my_HP.diagnostics.issues:
+                merged.add(SolverIssue(
+                    code=issue.code, component=issue.component, cls=issue.cls,
+                    method=issue.method, message=issue.message,
+                    severity=issue.severity, values=dict(issue.values),
+                ))
+        # Add HE child issues
+        if hasattr(self, 'my_HE') and hasattr(self.my_HE, 'diagnostics'):
+            for issue in self.my_HE.diagnostics.issues:
+                merged.add(SolverIssue(
+                    code=issue.code, component=issue.component, cls=issue.cls,
+                    method=issue.method, message=issue.message,
+                    severity=issue.severity, values=dict(issue.values),
+                ))
+        # Recompute primary to prioritize thermodynamic cause codes
+        merged.recompute_primary()
+        return merged
     
     # ======================================================================= #
     # ==== CARNOT BATTERY MODEL ============================================= #
@@ -228,12 +275,24 @@ class SBVCHP_SBORC_STES2T:
     
     def check_consistency(self):
         """
-        Check that the results are consistent.
+        Check that the results are consistent. (instrumented with diagnostics)
         """
-        if self.my_HP.error:                self.error = True
-        if self.my_HE.error:                self.error = True
+        f = self.fail
+        if self.my_HP.error:
+            f(True, 'CB_CHILD_HP_ERROR', 'CB', 'check_consistency',
+              'HP cycle has error flag set',
+              hp_class=self.my_HP.__class__.__name__,
+              hp_primary_code=self.my_HP.diagnostics.primary_code if hasattr(self.my_HP, 'diagnostics') else 'unknown')
+        if self.my_HE.error:
+            f(True, 'CB_CHILD_HE_ERROR', 'CB', 'check_consistency',
+              'HE cycle has error flag set',
+              he_class=self.my_HE.__class__.__name__,
+              he_primary_code=self.my_HE.diagnostics.primary_code if hasattr(self.my_HE, 'diagnostics') else 'unknown')
         # if self.T_st_lt < self.T_hp_cs_ex:  self.error = True
-        if self.T_st_ht < self.T_hp_cs_su:  self.error = True
+        if self.T_st_ht < self.T_hp_cs_su:
+            f(True, 'CB_STORAGE_TEMP_ORDER', 'CB', 'check_consistency',
+              'storage temp below heat source temp',
+              T_st_ht=self.T_st_ht, T_hp_cs_su=self.T_hp_cs_su)
     
     def retrieve_kpi(self):
         """

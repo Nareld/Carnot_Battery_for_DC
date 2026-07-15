@@ -59,7 +59,6 @@ Carnot_Battery_for_DC/
 │   │   └── off_design_retention.csv
 │   ├── plots/                              # [优化设计师] 输出图表
 │   ├── reports/                            # [优化设计师] 分析报告
-│   ├── _archive/                           # 已废弃脚本（8 个 Per-WP 绘图 + build_presentation.py）
 │   └── README.md                           # DEAP 优化器使用手册（中文）
 │
 ├── simulation_notes/                        # [建模工程师] 仿真笔记：参数扫描、Zhang2020 复现等
@@ -373,5 +372,5 @@ python3 test_optimizer.py
 3. **不可行解惩罚**：`INFEASIBLE_PENALTY = -1e6`，远小于任何可行目标值，确保不可行解被 NSGA-II 自动淘汰。所有目标函数返回此值时需保持符号一致性。
 4. **工质筛选先于优化**：`get_fluid_combos()` 在优化前过滤热力学不可行工质对，避免无效计算。
 5. **结果文件不纳入版本控制**：`results/` 和 `plots/` 目录内容通过 `.gitignore` 排除。
-6. **`_archive/` 仅供参考**：不得导入或依赖归档脚本。如需恢复某个可视化技巧，复制代码到新脚本。
+6. **废弃脚本不入库**：旧 `_archive/` 已删除并由通用分析脚本取代；如需历史实现，从 Git 历史恢复，不得建立运行时依赖。
 7. **论文 v2.0 路线已放弃**：不再使用 Lorenz 效率解耦框架和 CSWD 动态仿真。当前全部工作遵循 v3.0 路线。

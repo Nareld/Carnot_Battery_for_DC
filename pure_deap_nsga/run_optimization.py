@@ -62,10 +62,10 @@ def get_fluid_combos(wp_cfg: dict, fluid_candidates: dict) -> list:
 
     valid = []
     for hp_name, hp_info in fluid_candidates['hp_fluids'].items():
-        if hp_info['Tc_C'] < T_st_ht_max + 20.0:
+        if hp_info['Tc_C'] <= T_st_ht_max + 20.0:
             continue
         for he_name, he_info in fluid_candidates['he_fluids'].items():
-            if he_info['Tc_C'] < T_he_cs + 20.0:
+            if he_info['Tc_C'] <= T_he_cs + 20.0:
                 continue
             valid.append((hp_name, he_name))
     return valid

@@ -9,6 +9,8 @@ __pycache__/
 .ruff_cache/
 .venv/
 venv/
+*.egg-info/
+build/
 
 # Local editor/project settings
 .vscode/
@@ -18,6 +20,11 @@ venv/
 *.out
 pareto_results_export.tar.gz
 paper_outputs/write_test_marker.txt
+tmp/
+pure_deap_nsga/_archive/
+pure_deap_nsga/reports/archive/
+pure_deap_nsga/reports/files/
+pure_deap_nsga/reports/images/
 
 # Generated literature parsing artifacts
 paper/**/*_origin.pdf

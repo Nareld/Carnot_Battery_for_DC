@@ -1,0 +1,165 @@
+{
+  "_description": "G1a 单点模型验证 Case 模板 — 用于无优化参与的 CBSim 热力学模型可靠性验证",
+  "_version": "1.0",
+  "_date": "2026-06-24",
+
+  "source_reference": {
+    "citation": "<文献引用，如 Laterre et al. (2024) Energy, Appendix B>",
+    "location_in_source": "<具体位置，如 Table 1 / Figure B.1 / Section 3.1>",
+    "doi_or_url": ""
+  },
+
+  "configuration": {
+    "cb_class": "SBVCHP_SBORC_STES2T",
+    "description": "<构型描述：有无回热器等>"
+  },
+
+  "working_fluids": {
+    "fluid_hp": "<HP 工质名称，如 R1233zd(E)>",
+    "fluid_he": "<ORC 工质名称，如 R1234ze(E)>",
+    "fluid_st": "H2O",
+    "fluid_hp_cs": "H2O",
+    "fluid_he_cs": "H2O"
+  },
+
+  "boundary_conditions": {
+    "T_hs_C": {
+      "value": null,
+      "unit": "°C",
+      "description": "HP 冷源供温 = 数据废热温度"
+    },
+    "T_cs_C": {
+      "value": null,
+      "unit": "°C",
+      "description": "ORC 冷汇供温 = 环境温度"
+    }
+  },
+
+  "fixed_model_parameters": {
+    "_note": "以下参数在所有 G1a case 中固定不变（来自文献 Table 1 或项目默认值）",
+    "dT_hp_ev_pp_K": null,
+    "dT_hp_cd_pp_K": null,
+    "dT_he_ev_pp_K": null,
+    "dT_he_cd_pp_K": null,
+    "dT_he_cd_sc_K": null,
+    "dT_he_cs_gl_K": null,
+    "epsilon_hp": null,
+    "epsilon_he": null,
+    "p_st_lt_Pa": null,
+    "dp_hp_ev_Pa": 0.0,
+    "dp_hp_cd_Pa": 0.0,
+    "dp_he_ev_Pa": 0.0,
+    "dp_he_cd_Pa": 0.0,
+    "version": "thermodynamic_full",
+    "mode": "source"
+  },
+
+  "cycle_design_parameters": {
+    "_critical_note": "G1a 要求 ALL 9 个设计变量必须由参考来源给定。若任何变量为 null，此 case 不能用于 G1a。",
+    "T_st_ht_C": {
+      "value": null,
+      "unit": "°C",
+      "source": "<此值的文献出处，或 'not provided in reference'>"
+    },
+    "dT_st_sp_K": {
+      "value": null,
+      "unit": "K",
+      "source": ""
+    },
+    "dT_hp_cs_gl_K": {
+      "value": null,
+      "unit": "K",
+      "source": ""
+    },
+    "dT_hp_ev_sh_K": {
+      "value": null,
+      "unit": "K",
+      "source": ""
+    },
+    "dT_he_ev_sh_K": {
+      "value": null,
+      "unit": "K",
+      "source": ""
+    },
+    "dT_hp_cd_sc_K": {
+      "value": null,
+      "unit": "K",
+      "source": ""
+    },
+    "eta_max_cp": {
+      "value": null,
+      "unit": "-",
+      "source": ""
+    },
+    "eta_max_ex": {
+      "value": null,
+      "unit": "-",
+      "source": ""
+    },
+    "eta_pm": {
+      "value": null,
+      "unit": "-",
+      "source": ""
+    },
+    "p_st_ht_Pa": {
+      "value": null,
+      "unit": "Pa",
+      "source": ""
+    }
+  },
+
+  "expected_kpis": {
+    "_note": "每个 KPI 必须标注来源：是文献给定值(benchmark)还是优化结果(not for G1a)",
+    "eta_p2p": {
+      "value": null,
+      "unit": "-",
+      "source": "",
+      "type": "benchmark | optimized_result"
+    },
+    "eta_ex": {
+      "value": null,
+      "unit": "-",
+      "source": "",
+      "type": ""
+    },
+    "energy_density_thermal": {
+      "value": null,
+      "unit": "kWh/m³",
+      "source": "",
+      "type": ""
+    },
+    "cop_hp": {
+      "value": null,
+      "unit": "-",
+      "source": "",
+      "type": ""
+    },
+    "eta_he": {
+      "value": null,
+      "unit": "-",
+      "source": "",
+      "type": ""
+    }
+  },
+
+  "tolerances": {
+    "eta_p2p_relative_pct": 5.0,
+    "eta_ex_absolute_pp": 2.0,
+    "cop_hp_relative_pct": 5.0,
+    "eta_he_relative_pct": 5.0
+  },
+
+  "verification_status": {
+    "status": "incomplete_inputs_not_valid_for_G1a",
+    "reason": "<若 cycle_design_parameters 不完整，说明缺失哪些变量>",
+    "last_updated": "2026-06-24"
+  },
+
+  "_compliance_checks": {
+    "all_design_vars_specified": false,
+    "all_expected_kpis_have_source": false,
+    "tolerances_defined": true,
+    "kpi_types_correctly_labeled": false,
+    "ready_for_G1a": false
+  }
+}
