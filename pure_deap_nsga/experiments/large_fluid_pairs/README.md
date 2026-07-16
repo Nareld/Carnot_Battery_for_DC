@@ -1,5 +1,13 @@
 # 大规模工质对优化升级方案 v0.1
 
+## 执行文档
+
+- [`COMPUTE_RUN_DATA_MANAGEMENT_SPEC.md`](COMPUTE_RUN_DATA_MANAGEMENT_SPEC.md)：计算平台初始化、轮次拆分、run-id、目录、manifest、状态机、失败记录和验收规范。
+- [`LARGE_FLUID_PAIR_IMPLEMENTATION_ROADMAP.md`](LARGE_FLUID_PAIR_IMPLEMENTATION_ROADMAP.md)：从当前 runner 到可执行大规模并行工质对计算的能力补齐路线图。
+
+> 当前配置仍为 `template_not_approved_for_full_run`。S1 正式筛查须先通过路线图 M0–M4，
+> S2–S4 正式优化还须通过 M5；此前只允许执行 P0/P1、串行 S0 和开发验收任务。
+
 ## 1. 目标
 
 在不将“数值不收敛”误判为“热力学不可行”的前提下，将当前
