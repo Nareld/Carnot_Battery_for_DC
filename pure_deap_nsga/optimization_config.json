@@ -118,6 +118,8 @@
   },
 
   "optimization": {
+    "isolated_property_query_hp_fluids": [],
+    "isolated_property_query_he_fluids": ["R134a", "R152a"],
     "_comment": "NSGA-II/III settings",
     "algorithm": "NSGA2",
     "population_size": 100,

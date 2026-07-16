@@ -51,7 +51,11 @@
     "crossover_prob": 0.9,
     "mutation_prob": 0.1,
     "seed": 42,
-    "diagnostics_enabled": false,
+    "diagnostics_enabled": true,
+    "isolated_property_query_hp_fluids": ["Acetone"],
+    "isolated_property_query_he_fluids": [
+      "R1234yf", "R290", "R600a", "R245fa", "R134a", "R152A"
+    ],
     "objectives": ["eta_p2p", "energy_density_thermal", "exergy_efficiency"],
     "dT_he_cs_gl": 10.0,
     "dT_hp_ev_pp": 5.0,
@@ -66,13 +70,39 @@
     "fluid_st": "H2O"
   },
   "experiment": {
-    "status": "template_not_approved_for_full_run",
+    "status": "approved_for_full_run",
     "screening_design": "scrambled_sobol",
     "screening_points_per_pair": 256,
     "screening_working_points": ["DC-B", "DC-D", "DC-F"],
     "confirmation_seeds": [17, 42, 73, 101, 202],
     "confirmation_population_size": 100,
     "confirmation_generations": 150,
+    "profiles": {
+      "S1_screening": {
+        "sampler": "scrambled_sobol",
+        "points_per_pair": 256,
+        "working_points": ["DC-B", "DC-D", "DC-F"]
+      },
+      "S2_coarse": {
+        "population_size": 48,
+        "generations": 50,
+        "seeds": [42]
+      },
+      "S4_confirmation": {
+        "population_size": 100,
+        "generations": 150,
+        "seeds": [17, 42, 73, 101, 202]
+      },
+      "S6_fine_front": {
+        "population_size": 512,
+        "generations": 300,
+        "seeds": [17, 42, 73, 101, 202],
+        "cross_generation_archive": true,
+        "archive_tolerance": 1e-09,
+        "target_unique_front_points": 1000,
+        "scope": "only S4-validated WP/config/fluid pairs"
+      }
+    },
     "pressure_window_bar": [0.5, 40.0],
     "require_engineering_review": true
   }

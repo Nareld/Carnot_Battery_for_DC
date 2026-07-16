@@ -20,6 +20,54 @@ from   CoolProp import AbstractState
 import os
 import sys
 
+
+def _solver_scalar(value, name):
+    """Return a finite scalar from a one-variable SciPy solver iterate."""
+    array = np.asarray(value, dtype=float)
+    if array.size != 1:
+        raise ValueError(f'{name} must contain exactly one value, got shape {array.shape}')
+    scalar = float(array.reshape(-1)[0])
+    if not np.isfinite(scalar):
+        raise ValueError(f'{name} must be finite, got {scalar}')
+    return scalar
+
+
+def _safe_hmass_p(output, hmass, pressure, fluid, location):
+    """Query an Hmass-P state without reusing the cycle's mutable state."""
+    hmass_array, pressure_array = np.broadcast_arrays(
+        np.asarray(hmass, dtype=float), np.asarray(pressure, dtype=float)
+    )
+    if not np.all(np.isfinite(hmass_array)) \
+    or not np.all(np.isfinite(pressure_array)) \
+    or np.any(pressure_array <= 0):
+        raise ValueError(
+            f'COOLPROP_PROPERTY_INPUT_OUT_OF_RANGE at {location}: '
+            f'Hmass={hmass_array}, P={pressure_array}, fluid={fluid}'
+        )
+    try:
+        hmass_input = float(hmass_array) if hmass_array.ndim == 0 else hmass_array
+        pressure_input = (
+            float(pressure_array) if pressure_array.ndim == 0 else pressure_array
+        )
+        value = np.asarray(
+            CP.PropsSI(
+                output, 'Hmass', hmass_input, 'P', pressure_input, fluid
+            ),
+            dtype=float,
+        )
+    except Exception as exc:
+        raise ValueError(
+            f'COOLPROP_PROPERTY_INPUT_OUT_OF_RANGE at {location}: '
+            f'Hmass={hmass_array}, P={pressure_array}, fluid={fluid}; '
+            f'{type(exc).__name__}: {exc}'
+        ) from exc
+    if not np.all(np.isfinite(value)):
+        raise ValueError(
+            f'COOLPROP_PROPERTY_NONFINITE at {location}: '
+            f'output={output}, Hmass={hmass_array}, P={pressure_array}, fluid={fluid}'
+        )
+    return float(value) if value.ndim == 0 else value
+
 # ── CBSim diagnostics (non-intrusive, does not alter thermodynamic calculations) ──
 from _module_diagnostics import DiagnosticMixin
 SIMULATOR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -347,7 +395,7 @@ class SBVCHP(DiagnosticMixin):
         Cells discretization: 0.25K per cell (for primary fluid)
         """
         # --- Guess values ----------------------------------------------------
-        p_hp_2x = iter_var
+        p_hp_2x = _solver_scalar(iter_var, 'p_hp_2x')
         # --- Computation -----------------------------------------------------
         p_hp_2  = p_hp_2x
         if self.parameters['version'] == 'thermodynamic_full' \
@@ -390,12 +438,20 @@ class SBVCHP(DiagnosticMixin):
         h_hp_hs_vec  = np.linspace(h_hi,           self.i_hp_hs_ex,n_elem)
         T_hp_wf_vec  = np.zeros(n_elem)
         T_hp_hs_vec  = np.zeros(n_elem)
-        for i, T in enumerate(T_hp_wf_vec):
-            self.state_hp.update(CoolProp.HmassP_INPUTS,h_hp_wf_vec[i],
-                                                        p_hp_wf_vec[i])
+        if self.parameters.get('isolated_property_queries_hp', False):
+            T_hp_wf_vec = _safe_hmass_p(
+                'T', h_hp_wf_vec, p_hp_wf_vec,
+                self.parameters['fluid_hp'], 'SBVCHP.resi_p.coarse_wf',
+            )
+        else:
+            for i in range(len(T_hp_wf_vec)):
+                self.state_hp.update(
+                    CoolProp.HmassP_INPUTS, h_hp_wf_vec[i], p_hp_wf_vec[i]
+                )
+                T_hp_wf_vec[i] = self.state_hp.T()
+        for i, T in enumerate(T_hp_hs_vec):
             self.state_hs.update(CoolProp.HmassP_INPUTS,h_hp_hs_vec[i],
                                                         p_hp_hs_vec[i])
-            T_hp_wf_vec[i] = self.state_hp.T()
             T_hp_hs_vec[i] = self.state_hs.T()
         real_pp = round(min(T_hp_wf_vec-T_hp_hs_vec),3)
         trgt_pp = self.parameters['dT_hp_cd_pp']
@@ -447,7 +503,7 @@ class SBVCHP(DiagnosticMixin):
 
         # --- Final balance ---------------------------------------------------
         out     = d_hi
-        self.solutions_p.append(p_hp_2x.copy())
+        self.solutions_p.append(p_hp_2x)
         self.residuals_p.append(d_hi)
         self.T_wi = T_wi
         self.T_hi = T_hi
@@ -467,7 +523,7 @@ class SBVCHP(DiagnosticMixin):
         Residuals of different parameters to control the heat pump.
         """
         # --- Evaluate the massflow -------------------------------------------
-        cheat_m_hp       = iter_var
+        cheat_m_hp       = _solver_scalar(iter_var, 'm_hp')
         # --- Check if match the demanded power input -------------------------
         if  self.parameters['mode'] == 'power':
             resi         = self.P_hp - cheat_m_hp*(self.i_hp_2-self.i_hp_1)
@@ -1018,7 +1074,7 @@ class SRVCHP(SBVCHP):
         Cells discretization: 0.25K per cell (for primary fluid)
         """
         # --- Guess values ----------------------------------------------------
-        p_hp_2x  = iter_var
+        p_hp_2x  = _solver_scalar(iter_var, 'p_hp_2x')
         # --- Computation -----------------------------------------------------
         p_hp_2   = p_hp_2x
         self.state_hp.update(CoolProp.PQ_INPUTS,p_hp_2x,1.0)
@@ -1067,12 +1123,20 @@ class SRVCHP(SBVCHP):
         h_hp_hs_vec  = np.linspace(h_hi,           self.i_hp_hs_ex,n_elem)
         T_hp_wf_vec  = np.zeros(n_elem)
         T_hp_hs_vec  = np.zeros(n_elem)
-        for i, T in enumerate(T_hp_wf_vec):
-            self.state_hp.update(CoolProp.HmassP_INPUTS,h_hp_wf_vec[i],
-                                                        p_hp_wf_vec[i])
+        if self.parameters.get('isolated_property_queries_hp', False):
+            T_hp_wf_vec = _safe_hmass_p(
+                'T', h_hp_wf_vec, p_hp_wf_vec,
+                self.parameters['fluid_hp'], 'SRVCHP.resi_p.coarse_wf',
+            )
+        else:
+            for i in range(len(T_hp_wf_vec)):
+                self.state_hp.update(
+                    CoolProp.HmassP_INPUTS, h_hp_wf_vec[i], p_hp_wf_vec[i]
+                )
+                T_hp_wf_vec[i] = self.state_hp.T()
+        for i, T in enumerate(T_hp_hs_vec):
             self.state_hs.update(CoolProp.HmassP_INPUTS,h_hp_hs_vec[i],
                                                         p_hp_hs_vec[i])
-            T_hp_wf_vec[i] = self.state_hp.T()
             T_hp_hs_vec[i] = self.state_hs.T()
         real_pp = round(min(T_hp_wf_vec-T_hp_hs_vec),3)
         trgt_pp = self.parameters['dT_hp_cd_pp']
@@ -1123,7 +1187,7 @@ class SRVCHP(SBVCHP):
                                     -self.parameters['dT_hp_cd_pp']
         # --- Final balance ---------------------------------------------------
         out     = d_hi
-        self.solutions_p.append(p_hp_2x.copy())
+        self.solutions_p.append(p_hp_2x)
         self.residuals_p.append(d_hi)
         self.T_wi = T_wi
         self.T_hi = T_hi
@@ -1134,7 +1198,7 @@ class SRVCHP(SBVCHP):
         Residuals of different parameters to control the heat pump.
         """
         # --- Evaluate the massflow -------------------------------------------
-        cheat_m_hp       = iter_var
+        cheat_m_hp       = _solver_scalar(iter_var, 'm_hp')
         # --- Check if match the demanded power input -------------------------
         if  self.parameters['mode'] == 'power':
             resi         = self.P_hp - cheat_m_hp*(self.i_hp_2-self.i_hp_1r)
@@ -1587,7 +1651,7 @@ class TBVCHP(SBVCHP):
         Cells discretization: 0.25K per cell (for secondary fluid)
         """
         # --- Guess values ----------------------------------------------------
-        p_hp_2 = iter_var
+        p_hp_2 = _solver_scalar(iter_var, 'p_hp_2')
         # --- Computation -----------------------------------------------------
         T_hp_4x = min(  self.T_hp_cs_su
                       - self.parameters['dT_hp_ev_pp']
@@ -2117,7 +2181,7 @@ class TRVCHP(TBVCHP):
         Cells discretization: 0.25K per cell (for secondary fluid)
         """
         # --- Guess values ----------------------------------------------------
-        p_hp_2 = iter_var
+        p_hp_2 = _solver_scalar(iter_var, 'p_hp_2')
         # --- Computation -----------------------------------------------------
         T_hp_4x = min(  self.T_hp_cs_su
                       - self.parameters['dT_hp_ev_pp']

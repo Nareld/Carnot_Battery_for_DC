@@ -28,12 +28,15 @@ import json
 import time
 import logging
 import warnings
+import math
 import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass, field
 import random
+import base64
+import pickle
 
 from deap import base, creator, tools, algorithms
 import CoolProp.CoolProp as CP
@@ -362,12 +365,83 @@ class CBEvaluator:
             'p_0':   p_he_cs, 'T_0':   T_he_cs_su_K,
             'fluid_hp': self.fluid_hp,
             'fluid_he': self.fluid_he,
+            'isolated_property_queries_hp': self.fluid_hp.casefold() in {
+                name.casefold() for name in self.cfg.get(
+                    'isolated_property_query_hp_fluids', []
+                )
+            },
+            'isolated_property_queries_he': self.fluid_he.casefold() in {
+                name.casefold() for name in self.cfg.get(
+                    'isolated_property_query_he_fluids', []
+                )
+            },
             'fluid_st': self.cfg.get('fluid_st', 'H2O'),
             'wet_ex': 0, 'm_rat_hp': 0, 'm_rat_he': 0,
         }
         options = {'plot_flag': False, 'print_flag': False,
                    'debug': False, 'exergy': True}
         return inputs, params, options
+
+    @staticmethod
+    def _property_failure_code(message: str) -> Optional[str]:
+        text = str(message).lower()
+        if 'solver_initial_guess_out_of_bounds' in text \
+        or ('x0' in text and 'infeasible' in text):
+            return 'SOLVER_INITIAL_GUESS_OUT_OF_BOUNDS'
+        if 'p,t with ttse cannot be two-phase' in text:
+            return 'COOLPROP_BACKEND_TWOPHASE_UNSUPPORTED'
+        if 'coolprop_property_nonfinite' in text:
+            return 'COOLPROP_PROPERTY_NONFINITE'
+        property_markers = (
+            'coolprop_property_input_out_of_range',
+            'inputs are not in range',
+            'input pair variable is invalid',
+            'unable to solve 1phase',
+            'unable to solve 1phase py flash',
+            'hmolar is below',
+            'hmolar is greater than',
+            'p is not a valid number',
+            'temperature to qt_flash',
+        )
+        if any(marker in text for marker in property_markers):
+            return 'COOLPROP_PROPERTY_INPUT_OUT_OF_RANGE'
+        return None
+
+    def _normalize_issues(self, issues: List[Dict]) -> List[Dict]:
+        """Promote property-domain exceptions above generic wrapper codes."""
+        normalized = []
+        wrapper_codes = {
+            'EVALUATE_CYCLE_EXCEPTION', 'UNKNOWN_EXCEPTION',
+            'CB_SOLVER_ERROR', 'CB_CHILD_HP_ERROR', 'CB_CHILD_HE_ERROR',
+        }
+        for raw_issue in issues:
+            issue = dict(raw_issue)
+            code = self._property_failure_code(issue.get('message', ''))
+            if code and issue.get('code') in wrapper_codes:
+                values = dict(issue.get('values') or {})
+                values['wrapped_code'] = issue.get('code')
+                issue.update({
+                    'code': code,
+                    'component': (
+                        'solver' if code.startswith('SOLVER_') else 'property'
+                    ),
+                    'severity': 'error',
+                    'values': values,
+                })
+            normalized.append(issue)
+        return normalized
+
+    @staticmethod
+    def _primary_from_issues(issues: List[Dict], fallback: Optional[str]) -> Optional[str]:
+        wrappers = {
+            'EVALUATE_CYCLE_EXCEPTION', 'UNKNOWN_EXCEPTION',
+            'CB_SOLVER_ERROR', 'CB_CHILD_HP_ERROR', 'CB_CHILD_HE_ERROR',
+        }
+        for issue in issues:
+            if issue.get('severity', 'error') == 'error' \
+            and issue.get('code') not in wrappers:
+                return issue.get('code')
+        return fallback
 
     def evaluate(self, x: List[float]) -> Tuple[float, ...]:
         """
@@ -451,8 +525,13 @@ class CBEvaluator:
                     cb_diag = my_cb.get_diagnostics()
                     # Recompute primary to prioritize cause codes over wrappers
                     cb_diag.recompute_primary()
-                    base_info['primary_code'] = cb_diag.primary_code
-                    base_info['issues'].extend(cb_diag.to_dict().get('issues', []))
+                    normalized = self._normalize_issues(
+                        cb_diag.to_dict().get('issues', [])
+                    )
+                    base_info['issues'].extend(normalized)
+                    base_info['primary_code'] = self._primary_from_issues(
+                        normalized, cb_diag.primary_code
+                    )
                 else:
                     if diag_on:
                         base_info['primary_code'] = 'CB_SOLVER_ERROR'
@@ -498,13 +577,28 @@ class CBEvaluator:
                 cb_diag = my_cb.get_diagnostics()
                 cb_diag.recompute_primary()
                 if cb_diag.primary_code:
-                    base_info['primary_code'] = cb_diag.primary_code
-                    base_info['issues'].extend(cb_diag.to_dict().get('issues', []))
+                    normalized = self._normalize_issues(
+                        cb_diag.to_dict().get('issues', [])
+                    )
+                    base_info['issues'].extend(normalized)
+                    base_info['primary_code'] = self._primary_from_issues(
+                        normalized, cb_diag.primary_code
+                    )
             if base_info['primary_code'] is None:
-                base_info['primary_code'] = 'UNKNOWN_EXCEPTION'
+                base_info['primary_code'] = (
+                    self._property_failure_code(str(e)) or 'UNKNOWN_EXCEPTION'
+                )
             if diag_on:
+                exception_code = (
+                    self._property_failure_code(str(e)) or 'UNKNOWN_EXCEPTION'
+                )
                 base_info['issues'].append({
-                    'code': 'UNKNOWN_EXCEPTION', 'component': 'optimizer',
+                    'code': exception_code,
+                    'component': (
+                        'property' if exception_code.startswith('COOLPROP_')
+                        else 'solver' if exception_code.startswith('SOLVER_')
+                        else 'optimizer'
+                    ),
                     'cls': 'CBEvaluator', 'method': 'evaluate',
                     'message': f'{type(e).__name__}: {str(e)[:200]}',
                     'severity': 'error',
@@ -543,7 +637,8 @@ class NSGAOptimizer:
                  mut_prob: float = 0.1,
                  eta_cx: float = 20.0,
                  eta_mut: float = 20.0,
-                 seed: Optional[int] = None):
+                 seed: Optional[int] = None,
+                 archive_tol: float = 1e-9):
         """
         Parameters
         ----------
@@ -559,13 +654,19 @@ class NSGAOptimizer:
         """
         self.evaluator = evaluator
         self.algorithm = algorithm.upper()
-        self.pop_size  = pop_size + (pop_size % 4)  # ensure divisible by 4
+        if pop_size < 4:
+            raise ValueError('pop_size must be >= 4')
+        self.pop_size  = ((pop_size + 3) // 4) * 4
         self.n_gen     = n_gen
         self.cx_prob   = cx_prob
         self.mut_prob  = mut_prob
         self.eta_cx    = eta_cx
         self.eta_mut   = eta_mut
         self.seed      = seed
+        self.archive_tol = float(archive_tol)
+        if self.archive_tol < 0:
+            raise ValueError('archive_tol must be >= 0')
+        self.generation_metrics: List[Dict] = []
 
         self.n_obj  = len(evaluator.objectives)
         self.n_vars = evaluator.n_vars
@@ -611,11 +712,10 @@ class NSGAOptimizer:
                               low=self.lb, up=self.ub, eta=self.eta_cx)
 
         # Polynomial mutation
-        mut_prob_per_gene = self.mut_prob / self.n_vars
         self.toolbox.register('mutate', tools.mutPolynomialBounded,
                               low=self.lb, up=self.ub,
                               eta=self.eta_mut,
-                              indpb=mut_prob_per_gene)
+                              indpb=1.0 / self.n_vars)
 
         # Selection
         if self.algorithm == 'NSGA3':
@@ -628,7 +728,89 @@ class NSGAOptimizer:
         else:  # NSGA2
             self.toolbox.register('select', tools.selNSGA2)
 
-    def run(self, verbose: bool = True) -> Tuple[List, tools.Logbook]:
+    def _fitness_is_feasible(self, fitness) -> bool:
+        values = tuple(fitness)
+        return (
+            len(values) == self.n_obj
+            and all(np.isfinite(value) for value in values)
+            and all(value > INFEASIBLE_PENALTY / 2 for value in values)
+        )
+
+    def _archive_similar(self, left, right) -> bool:
+        return bool(np.allclose(
+            np.asarray(left, dtype=float),
+            np.asarray(right, dtype=float),
+            rtol=0.0, atol=self.archive_tol,
+        ))
+
+    @staticmethod
+    def _encode_state(value) -> str:
+        return base64.b64encode(pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)).decode('ascii')
+
+    @staticmethod
+    def _decode_state(value: str):
+        return pickle.loads(base64.b64decode(value.encode('ascii')))
+
+    def export_checkpoint(self, generation: int, population, archive) -> Dict:
+        """Return a JSON-serializable optimizer checkpoint."""
+        def crowding_value(individual):
+            value = getattr(individual.fitness, 'crowding_dist', None)
+            if value is None:
+                return None
+            if np.isposinf(value):
+                return 'inf'
+            if np.isneginf(value):
+                return '-inf'
+            return float(value)
+
+        return {
+            'schema_version': '0.1',
+            'optimizer_signature': {
+                'algorithm': self.algorithm,
+                'population_size': self.pop_size,
+                'n_objectives': self.n_obj,
+                'n_variables': self.n_vars,
+                'lower_bounds': self.lb,
+                'upper_bounds': self.ub,
+                'crossover_probability': self.cx_prob,
+                'mutation_probability': self.mut_prob,
+                'eta_crossover': self.eta_cx,
+                'eta_mutation': self.eta_mut,
+                'archive_tolerance': self.archive_tol,
+                'seed': self.seed,
+            },
+            'generation': generation,
+            'population': [
+                {
+                    'x': list(map(float, ind)),
+                    'fitness': list(map(float, ind.fitness.values)),
+                    'crowding_dist': crowding_value(ind),
+                }
+                for ind in population
+            ],
+            'archive': [
+                {'x': list(map(float, ind)), 'fitness': list(map(float, ind.fitness.values))}
+                for ind in archive
+            ],
+            'random_state': self._encode_state(random.getstate()),
+            'numpy_random_state': self._encode_state(np.random.get_state()),
+            'generation_metrics': list(self.generation_metrics),
+        }
+
+    def _individual_from_record(self, record: Dict):
+        individual = self._ind_cls(record['x'])
+        individual.fitness.values = tuple(record['fitness'])
+        if record.get('crowding_dist') is not None:
+            crowding = record['crowding_dist']
+            individual.fitness.crowding_dist = (
+                math.inf if crowding == 'inf'
+                else -math.inf if crowding == '-inf'
+                else float(crowding)
+            )
+        return individual
+
+    def run(self, verbose: bool = True, resume_state: Optional[Dict] = None,
+            checkpoint_every: int = 0, checkpoint_callback=None) -> Tuple[List, tools.Logbook]:
         """
         Run the optimization.
 
@@ -637,32 +819,62 @@ class NSGAOptimizer:
         pareto_front : list of non-dominated individuals
         logbook      : DEAP logbook with statistics per generation
         """
-        if self.seed is not None:
+        if resume_state is None and self.seed is not None:
             random.seed(self.seed)
             np.random.seed(self.seed)
 
-        # Initialize population
-        pop = self.toolbox.population(n=self.pop_size)
+        archive = tools.ParetoFront(similar=self._archive_similar)
+        start_generation = 0
+        if resume_state is None:
+            pop = self.toolbox.population(n=self.pop_size)
+            self.generation_metrics = []
+        else:
+            expected_signature = self.export_checkpoint(0, [], [])['optimizer_signature']
+            if resume_state.get('optimizer_signature') != expected_signature:
+                raise ValueError('checkpoint optimizer signature does not match current configuration')
+            pop = [self._individual_from_record(record)
+                   for record in resume_state['population']]
+            if len(pop) != self.pop_size:
+                raise ValueError(
+                    f'checkpoint population {len(pop)} != configured {self.pop_size}'
+                )
+            for record in resume_state.get('archive', []):
+                archive.insert(self._individual_from_record(record))
+            random.setstate(self._decode_state(resume_state['random_state']))
+            np.random.set_state(self._decode_state(resume_state['numpy_random_state']))
+            self.generation_metrics = list(resume_state.get('generation_metrics', []))
+            start_generation = int(resume_state['generation'])
 
         # Statistics
         stats = tools.Statistics(lambda ind: ind.fitness.values)
-        stats.register('min',  lambda vals: np.min([v for v in vals if v[0] > INFEASIBLE_PENALTY/2], axis=0) if any(v[0] > INFEASIBLE_PENALTY/2 for v in vals) else [INFEASIBLE_PENALTY]*self.n_obj)
-        stats.register('max',  lambda vals: np.max([v for v in vals if v[0] > INFEASIBLE_PENALTY/2], axis=0) if any(v[0] > INFEASIBLE_PENALTY/2 for v in vals) else [INFEASIBLE_PENALTY]*self.n_obj)
-        stats.register('n_feasible', lambda vals: sum(1 for v in vals if v[0] > INFEASIBLE_PENALTY/2))
+        stats.register('min', lambda vals: np.min(
+            [v for v in vals if self._fitness_is_feasible(v)], axis=0
+        ) if any(self._fitness_is_feasible(v) for v in vals)
+        else [INFEASIBLE_PENALTY] * self.n_obj)
+        stats.register('max', lambda vals: np.max(
+            [v for v in vals if self._fitness_is_feasible(v)], axis=0
+        ) if any(self._fitness_is_feasible(v) for v in vals)
+        else [INFEASIBLE_PENALTY] * self.n_obj)
+        stats.register('n_feasible', lambda vals: sum(
+            1 for v in vals if self._fitness_is_feasible(v)
+        ))
 
         logbook = tools.Logbook()
         logbook.header = ['gen', 'n_feasible'] + [f'max_obj{i}' for i in range(self.n_obj)]
 
-        # Evaluate initial population
-        fitnesses = list(map(self.toolbox.evaluate, pop))
-        for ind, fit in zip(pop, fitnesses):
-            ind.fitness.values = fit
+        if resume_state is None:
+            fitnesses = list(map(self.toolbox.evaluate, pop))
+            for ind, fit in zip(pop, fitnesses):
+                ind.fitness.values = fit
+            archive.update(ind for ind in pop if self._fitness_is_feasible(ind.fitness.values))
 
-        # Apply NSGA-II selection to assign crowding distance
-        pop = self.toolbox.select(pop, len(pop))
+        # Apply selection once to assign crowding distance. A checkpoint stores
+        # the selected population order and crowding distances verbatim.
+        if resume_state is None:
+            pop = self.toolbox.select(pop, len(pop))
 
         t0 = time.time()
-        for gen in range(1, self.n_gen + 1):
+        for gen in range(start_generation + 1, self.n_gen + 1):
             # Generate offspring via tournament + crossover + mutation
             offspring = tools.selTournamentDCD(pop, len(pop))
             offspring = [self.toolbox.clone(ind) for ind in offspring]
@@ -674,9 +886,10 @@ class NSGAOptimizer:
                     del offspring[i + 1].fitness.values
 
             for ind in offspring:
-                if not ind.fitness.valid:
+                if random.random() < self.mut_prob:
                     self.toolbox.mutate(ind)
-                    del ind.fitness.values
+                    if ind.fitness.valid:
+                        del ind.fitness.values
 
             # Evaluate invalid individuals
             invalid = [ind for ind in offspring if not ind.fitness.valid]
@@ -687,6 +900,8 @@ class NSGAOptimizer:
             # Combine and select next generation
             combined = pop + offspring
             pop = self.toolbox.select(combined, self.pop_size)
+            archive.update(ind for ind in combined
+                           if self._fitness_is_feasible(ind.fitness.values))
 
             # Log statistics
             record = stats.compile(pop)
@@ -695,6 +910,25 @@ class NSGAOptimizer:
             logbook.record(gen=gen, n_feasible=n_feas,
                            **{f'max_obj{i}': max_vals[i] if hasattr(max_vals, '__len__') else max_vals
                               for i in range(self.n_obj)})
+            unique_population = {
+                tuple(np.round(np.asarray(ind, dtype=float), 12)) for ind in pop
+            }
+            metric = {
+                'generation': gen,
+                'n_evaluated': len(invalid),
+                'n_feasible': int(n_feas),
+                'population_size': len(pop),
+                'front_size': len(tools.sortNondominated(
+                    pop, len(pop), first_front_only=True
+                )[0]),
+                'archive_size': len(archive),
+                'unique_ratio': len(unique_population) / len(pop) if pop else 0.0,
+                'elapsed_s': time.time() - t0,
+            }
+            self.generation_metrics.append(metric)
+            if checkpoint_every > 0 and checkpoint_callback is not None \
+            and gen % checkpoint_every == 0:
+                checkpoint_callback(self.export_checkpoint(gen, pop, archive))
 
             if verbose and gen % 10 == 0:
                 elapsed = time.time() - t0
@@ -702,11 +936,10 @@ class NSGAOptimizer:
                             f'feasible={n_feas}/{self.pop_size} | '
                             f'time={elapsed:.1f}s')
 
-        # Extract Pareto front (rank-0 individuals)
-        pareto_front = tools.sortNondominated(pop, len(pop), first_front_only=True)[0]
-        # Filter out infeasible
-        pareto_front = [ind for ind in pareto_front
-                        if ind.fitness.values[0] > INFEASIBLE_PENALTY / 2]
+        pareto_front = [
+            ind for ind in archive
+            if self._fitness_is_feasible(ind.fitness.values)
+        ]
 
         return pareto_front, logbook
 

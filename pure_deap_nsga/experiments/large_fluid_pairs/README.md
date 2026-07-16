@@ -5,8 +5,40 @@
 - [`COMPUTE_RUN_DATA_MANAGEMENT_SPEC.md`](COMPUTE_RUN_DATA_MANAGEMENT_SPEC.md)：计算平台初始化、轮次拆分、run-id、目录、manifest、状态机、失败记录和验收规范。
 - [`LARGE_FLUID_PAIR_IMPLEMENTATION_ROADMAP.md`](LARGE_FLUID_PAIR_IMPLEMENTATION_ROADMAP.md)：从当前 runner 到可执行大规模并行工质对计算的能力补齐路线图。
 
-> 当前配置仍为 `template_not_approved_for_full_run`。S1 正式筛查须先通过路线图 M0–M4，
-> S2–S4 正式优化还须通过 M5；此前只允许执行 P0/P1、串行 S0 和开发验收任务。
+> `optimization_config_large_pairs.json` 已在 S0/S1DEV、原生崩溃修复、第二 Sobol seed、
+> 1024 点稀疏域复核和诊断闭环验收后批准用于正式 S1。S2–S4 正式优化仍须通过 M5。
+
+## 隔离式大规模 runner
+
+`run_large_scale.py` 将最小任务固定为
+`WP × configuration × HP fluid × HE fluid × seed`，支持单工质对、CSV pair-list、
+多 seed、任务级多进程、独立 run-id、目录锁、原子输出、代检查点、恢复、跨代
+Pareto archive、失败 JSON/CSV 索引和前沿物理验收。
+
+开发验收示例：
+
+```bash
+../.venv/bin/python pure_deap_nsga/experiments/large_fluid_pairs/run_large_scale.py \
+  --config pure_deap_nsga/experiments/large_fluid_pairs/optimization_config_large_pairs.json \
+  --data-root /path/outside/repository/cbsim-runs \
+  --stage DEV --wp DC-A --cfg SBVCHP_SBORC \
+  --fluid-hp 'R1233zd(E)' --fluid-he 'R1234ze(E)' \
+  --seed 42 --population-size 48 --generations 50 \
+  --checkpoint-every 10 --workers 1
+```
+
+pair-list 必须包含 `fluid_hp,fluid_he` 两列。多个 worker 只并行不同的最小任务；
+单任务内部仍串行，避免在线程间共享 CoolProp 状态。原生崩溃、普通异常和超时分别写入
+任务 manifest、日志和唯一终态文件。
+
+正式 `S1`–`S5` 同时要求：
+
+- Git 工作树干净；
+- `experiment.status=approved_for_full_run`；
+- 工质对通过 Tc、三相点、饱和物性、压力窗口和估算压比门。
+
+精细前沿参数位于 `experiment.profiles.S6_fine_front`。超过 1000 点依赖跨代 archive
+及多 seed 合并，不由末代种群规模单独保证；该 profile 只应用于已经通过 S4 的少量组合。
 
 ## 1. 目标
 

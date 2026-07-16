@@ -14,11 +14,90 @@ import scipy.optimize
 import numpy as np
 
 import CoolProp
+import CoolProp.CoolProp as CP
 
 from   CoolProp import AbstractState
 
 import os
 import sys
+
+
+def _solver_scalar(value, name):
+    """Return a finite scalar from a one-variable SciPy solver iterate."""
+    array = np.asarray(value, dtype=float)
+    if array.size != 1:
+        raise ValueError(f'{name} must contain exactly one value, got shape {array.shape}')
+    scalar = float(array.reshape(-1)[0])
+    if not np.isfinite(scalar):
+        raise ValueError(f'{name} must be finite, got {scalar}')
+    return scalar
+
+
+def _safe_hmass_p(output, hmass, pressure, fluid, location):
+    """Query an Hmass-P state without reusing the cycle's mutable state."""
+    hmass_array, pressure_array = np.broadcast_arrays(
+        np.asarray(hmass, dtype=float), np.asarray(pressure, dtype=float)
+    )
+    if not np.all(np.isfinite(hmass_array)) \
+    or not np.all(np.isfinite(pressure_array)) \
+    or np.any(pressure_array <= 0):
+        raise ValueError(
+            f'COOLPROP_PROPERTY_INPUT_OUT_OF_RANGE at {location}: '
+            f'Hmass={hmass_array}, P={pressure_array}, fluid={fluid}'
+        )
+    try:
+        hmass_input = float(hmass_array) if hmass_array.ndim == 0 else hmass_array
+        pressure_input = (
+            float(pressure_array) if pressure_array.ndim == 0 else pressure_array
+        )
+        value = np.asarray(
+            CP.PropsSI(
+                output, 'Hmass', hmass_input, 'P', pressure_input, fluid
+            ),
+            dtype=float,
+        )
+    except Exception as exc:
+        raise ValueError(
+            f'COOLPROP_PROPERTY_INPUT_OUT_OF_RANGE at {location}: '
+            f'Hmass={hmass_array}, P={pressure_array}, fluid={fluid}; '
+            f'{type(exc).__name__}: {exc}'
+        ) from exc
+    if not np.all(np.isfinite(value)):
+        raise ValueError(
+            f'COOLPROP_PROPERTY_NONFINITE at {location}: '
+            f'output={output}, Hmass={hmass_array}, P={pressure_array}, fluid={fluid}'
+        )
+    return float(value) if value.ndim == 0 else value
+
+
+def _bounded_least_squares(function, x0, lower, upper, location, **options):
+    """Run least_squares from a finite point strictly inside physical bounds."""
+    x0 = np.asarray(x0, dtype=float)
+    lower = np.asarray(lower, dtype=float)
+    upper = np.asarray(upper, dtype=float)
+    if x0.shape != lower.shape or x0.shape != upper.shape \
+    or not np.all(np.isfinite(x0)) \
+    or not np.all(np.isfinite(lower)) \
+    or not np.all(np.isfinite(upper)) \
+    or np.any(lower >= upper):
+        raise ValueError(
+            f'SOLVER_INITIAL_GUESS_OUT_OF_BOUNDS at {location}: '
+            f'x0={x0.tolist()}, lower={lower.tolist()}, upper={upper.tolist()}'
+        )
+    margin = np.maximum((upper - lower) * 1e-10, 1e-6)
+    safe_x0 = np.clip(x0, lower + margin, upper - margin)
+    try:
+        return scipy.optimize.least_squares(
+            function, safe_x0, bounds=(lower, upper), **options
+        )
+    except ValueError as exc:
+        if 'x0' in str(exc).lower() and 'infeasible' in str(exc).lower():
+            raise ValueError(
+                f'SOLVER_INITIAL_GUESS_OUT_OF_BOUNDS at {location}: '
+                f'x0={x0.tolist()}, safe_x0={safe_x0.tolist()}, '
+                f'lower={lower.tolist()}, upper={upper.tolist()}; {exc}'
+            ) from exc
+        raise
 
 # ── CBSim diagnostics (non-intrusive, does not alter thermodynamic calculations) ──
 from _module_diagnostics import DiagnosticMixin
@@ -320,10 +399,13 @@ class SBORC(DiagnosticMixin):
             p_sol = scipy.optimize.fsolve(self.resi_p, guess)
         except:
             guess = self.p_he_1x_min, self.p_he_3x_max 
-            res = scipy.optimize.least_squares(self.resi_p, guess, 
-                  bounds = ((self.p_he_1x_min,self.p_he_1x_min),
-                            (self.p_he_3x_max,self.p_he_3x_max)),
-                  ftol=1e-12,xtol=1e-12)
+            res = _bounded_least_squares(
+                self.resi_p, guess,
+                (self.p_he_1x_min, self.p_he_3x_min),
+                (self.p_he_1x_max, self.p_he_3x_max),
+                'SBORC.find_p.fallback',
+                ftol=1e-12, xtol=1e-12,
+            )
             p_sol = res.x
             import warnings
             warnings.warn('In: SBORC.find_p, fsolve failed.'+
@@ -340,10 +422,13 @@ class SBORC(DiagnosticMixin):
             # print(f'p_he_3x_min:   {self.p_he_3x_min*1e-5}')
             # print(f'p_he_3x_max:   {self.p_he_3x_max*1e-5}')
             # print(f'p_he_3x_guess: {guess[1]*1e-5}')
-            res = scipy.optimize.least_squares(self.resi_p, guess, 
-                  bounds = ((self.p_he_1x_min,self.p_he_1x_min),
-                            (self.p_he_3x_max,self.p_he_3x_max)),
-                  ftol=1e-12,xtol=1e-12)
+            res = _bounded_least_squares(
+                self.resi_p, guess,
+                (self.p_he_1x_min, self.p_he_3x_min),
+                (self.p_he_1x_max, self.p_he_3x_max),
+                'SBORC.find_p.residual_retry',
+                ftol=1e-12, xtol=1e-12,
+            )
             p_sol = res.x
             import warnings
             warnings.warn('In: SBORC.find_p, fsolve did not converge.'+
@@ -438,12 +523,20 @@ class SBORC(DiagnosticMixin):
         h_he_hs_vec  = np.linspace(self.i_he_hs_ex,           h_hi,n_elem)
         T_he_wf_vec  = np.zeros(n_elem)
         T_he_hs_vec  = np.zeros(n_elem)
-        for i, T in enumerate(T_he_wf_vec):
-            self.state_he.update(CoolProp.HmassP_INPUTS,h_he_wf_vec[i],
-                                                        p_he_wf_vec[i])
+        if self.parameters.get('isolated_property_queries_he', False):
+            T_he_wf_vec = _safe_hmass_p(
+                'T', h_he_wf_vec, p_he_wf_vec,
+                self.parameters['fluid_he'], 'SBORC.resi_p.coarse_wf',
+            )
+        else:
+            for i in range(len(T_he_wf_vec)):
+                self.state_he.update(
+                    CoolProp.HmassP_INPUTS, h_he_wf_vec[i], p_he_wf_vec[i]
+                )
+                T_he_wf_vec[i] = self.state_he.T()
+        for i, T in enumerate(T_he_hs_vec):
             self.state_hs.update(CoolProp.HmassP_INPUTS,h_he_hs_vec[i],
                                                         p_he_hs_vec[i])
-            T_he_wf_vec[i] = self.state_he.T()
             T_he_hs_vec[i] = self.state_hs.T()
         real_pp = round(min(T_he_hs_vec-T_he_wf_vec),3)
         trgt_pp = self.parameters['dT_he_ev_pp']
@@ -524,7 +617,7 @@ class SBORC(DiagnosticMixin):
         Residuals of different parameters to control the heat engine.
         """
         # --- Evaluate the massflow -------------------------------------------
-        cheat_m_he     = iter_var
+        cheat_m_he     = _solver_scalar(iter_var, 'm_he')
         # --- Check if match the demanded power input -------------------------
         if  self.parameters['mode'] == 'power':
             w_in_he_en   = self.i_he_2   - self.i_he_1
@@ -652,11 +745,18 @@ class SBORC(DiagnosticMixin):
                 self.state_he.update(CoolProp.PSmass_INPUTS, p, self.s_he_3)
                 h_is = self.state_he.hmass()
                 h    = self.i_he_3 - self.eta_is_ex * (self.i_he_3 - h_is)
-                self.state_he.update(CoolProp.HmassP_INPUTS, h, p)
-                if 0 < self.state_he.Q() < 1:
+                if self.parameters.get('isolated_property_queries_he', False):
+                    quality = _safe_hmass_p(
+                        'Q', h, p, self.parameters['fluid_he'],
+                        'SBORC.check_consistency.expansion',
+                    )
+                else:
+                    self.state_he.update(CoolProp.HmassP_INPUTS, h, p)
+                    quality = self.state_he.Q()
+                if 0 < quality < 1:
                     f(True, 'PHASE_WET_EXPANSION', 'HE',
                       'check_consistency', f'wet expansion at p={p:.0f} Pa',
-                      p=p, quality=self.state_he.Q())
+                      p=p, quality=quality)
                     break
     
     def retrieve_kpi(self):
@@ -1175,12 +1275,20 @@ class SRORC(SBORC):
         h_he_hs_vec  = np.linspace(self.i_he_hs_ex,           h_hi,n_elem)
         T_he_wf_vec  = np.zeros(n_elem)
         T_he_hs_vec  = np.zeros(n_elem)
-        for i, T in enumerate(T_he_wf_vec):
-            self.state_he.update(CoolProp.HmassP_INPUTS,h_he_wf_vec[i],
-                                                        p_he_wf_vec[i])
+        if self.parameters.get('isolated_property_queries_he', False):
+            T_he_wf_vec = _safe_hmass_p(
+                'T', h_he_wf_vec, p_he_wf_vec,
+                self.parameters['fluid_he'], 'SRORC.resi_p.coarse_wf',
+            )
+        else:
+            for i in range(len(T_he_wf_vec)):
+                self.state_he.update(
+                    CoolProp.HmassP_INPUTS, h_he_wf_vec[i], p_he_wf_vec[i]
+                )
+                T_he_wf_vec[i] = self.state_he.T()
+        for i, T in enumerate(T_he_hs_vec):
             self.state_hs.update(CoolProp.HmassP_INPUTS,h_he_hs_vec[i],
                                                         p_he_hs_vec[i])
-            T_he_wf_vec[i] = self.state_he.T()
             T_he_hs_vec[i] = self.state_hs.T()
         real_pp = round(min(T_he_hs_vec-T_he_wf_vec),3)
         trgt_pp = self.parameters['dT_he_ev_pp']
@@ -1208,9 +1316,17 @@ class SRORC(SBORC):
             n_elem          = len(p_he_wf_vec)
             # --- working fluid -----------------------------------------------
             T_he_wf_vec     = np.zeros(n_elem)
-            for i, h in enumerate(h_he_wf_vec):
-                self.state_he.update(CoolProp.HmassP_INPUTS,h,p_he_wf_vec[i])
-                T_he_wf_vec[i] = self.state_he.T()
+            if self.parameters.get('isolated_property_queries_he', False):
+                T_he_wf_vec = _safe_hmass_p(
+                    'T', h_he_wf_vec, p_he_wf_vec, self.parameters['fluid_he'],
+                    'SRORC.resi_p.fine_wf',
+                )
+            else:
+                for i in range(len(T_he_wf_vec)):
+                    self.state_he.update(
+                        CoolProp.HmassP_INPUTS, h_he_wf_vec[i], p_he_wf_vec[i]
+                    )
+                    T_he_wf_vec[i] = self.state_he.T()
             # --- secondary fluid ---------------------------------------------
             p_he_hs_vec   = np.linspace(self.p_he_hs_ex,self.p_he_hs_su,n_elem)
             T_he_hs_vec   = np.zeros(n_elem)
@@ -1253,7 +1369,7 @@ class SRORC(SBORC):
         Residuals of different parameters to control the heat engine.
         """
         # --- Evaluate the massflow -------------------------------------------
-        cheat_m_he     = iter_var
+        cheat_m_he     = _solver_scalar(iter_var, 'm_he')
         # --- Check if match the demanded power input -------------------------
         if  self.parameters['mode'] == 'power':
             w_in_he_en   = self.i_he_2   - self.i_he_1
@@ -2677,7 +2793,7 @@ class TRORC(TBORC):
         Residuals of different parameters to control the heat engine.
         """
         # --- Evaluate the massflow -------------------------------------------
-        cheat_m_he     = iter_var
+        cheat_m_he     = _solver_scalar(iter_var, 'm_he')
         # --- Check if match the demanded power input -------------------------
         if  self.parameters['mode'] == 'power':
             w_in_he_en   = self.i_he_2   - self.i_he_1
