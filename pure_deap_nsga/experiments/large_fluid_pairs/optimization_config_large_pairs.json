@@ -47,7 +47,7 @@
   "optimization": {
     "algorithm": "NSGA2",
     "population_size": 48,
-    "n_generations": 250,
+    "n_generations": 300,
     "crossover_prob": 0.9,
     "mutation_prob": 0.1,
     "seed": 42,
@@ -111,7 +111,7 @@
       "S2_coarse": {
         "population_size": 48,
         "minimum_generations": 150,
-        "maximum_generations": 250,
+        "maximum_generations": 300,
         "hv_window_generations": 20,
         "hv_relative_tolerance": 0.005,
         "seeds": [42]
