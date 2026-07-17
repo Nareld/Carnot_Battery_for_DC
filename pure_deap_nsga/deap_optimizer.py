@@ -41,6 +41,7 @@ import base64
 import pickle
 
 from deap import base, creator, tools, algorithms
+from deap.tools._hypervolume import hv as deap_hv
 import CoolProp.CoolProp as CP
 
 # ── Path setup ────────────────────────────────────────────────────────────────
@@ -277,6 +278,9 @@ class CBEvaluator:
         self.diagnostics_enabled = cfg.get('diagnostics_enabled', False)
         self.last_eval_info: Dict = {}
         self.diagnostics_records: List[Dict] = []
+        self.evaluation_context: Dict = {
+            'phase': 'direct', 'generation': None, 'individual_index': None,
+        }
 
         # Decision variable bounds
         self.lb = np.array([
@@ -741,6 +745,10 @@ class CBEvaluator:
     def _record_eval(self, info: Dict):
         """Record evaluation info if diagnostics enabled."""
         info = dict(info)
+        context = dict(getattr(self, 'evaluation_context', {}) or {})
+        info['evaluation_phase'] = context.get('phase', 'direct')
+        info['generation'] = context.get('generation')
+        info['individual_index'] = context.get('individual_index')
         info['constraint_violation'] = (
             0.0 if info.get('feasible') else self._constraint_violation(info)
         )
@@ -802,13 +810,114 @@ class NSGAOptimizer:
         if self.archive_tol < 0:
             raise ValueError('archive_tol must be >= 0')
         self.generation_metrics: List[Dict] = []
+        self.completed_generations = 0
+        self.stopping_reason = 'maximum_generations'
 
         self.n_obj  = len(evaluator.objectives)
         self.n_vars = evaluator.n_vars
         self.lb     = evaluator.lb.tolist()
         self.ub     = evaluator.ub.tolist()
 
+        self.hypervolume_spec = self._load_hypervolume_spec()
+
         self._setup_deap()
+
+    def _load_hypervolume_spec(self) -> Optional[Dict]:
+        raw = dict(getattr(self.evaluator, 'cfg', {}).get('hypervolume', {}) or {})
+        if not raw or not raw.get('enabled', False):
+            return None
+        objectives = list(raw.get('objectives', []))
+        if objectives != list(self.evaluator.objectives):
+            raise ValueError(
+                'hypervolume objective order must exactly match evaluator objectives'
+            )
+        bounds = raw.get('normalization_bounds', {})
+        lower, upper = [], []
+        for objective in objectives:
+            pair = bounds.get(objective)
+            if not isinstance(pair, list) or len(pair) != 2:
+                raise ValueError(f'missing hypervolume bounds for {objective}')
+            lo, hi = map(float, pair)
+            if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
+                raise ValueError(f'invalid hypervolume bounds for {objective}')
+            lower.append(lo)
+            upper.append(hi)
+        reference = list(map(float, raw.get('reference_point_normalized', [])))
+        if len(reference) != len(objectives) or not all(
+            np.isfinite(value) for value in reference
+        ):
+            raise ValueError('invalid normalized hypervolume reference point')
+        if any(value < 0.0 or value >= 1.0 for value in reference):
+            raise ValueError('normalized hypervolume reference must lie in [0, 1)')
+        spec = {
+            'schema_version': str(raw.get('schema_version', '1.0')),
+            'algorithm': str(raw.get('algorithm', 'deap_exact_max_v1')),
+            'objectives': objectives,
+            'lower': lower,
+            'upper': upper,
+            'reference_point_normalized': reference,
+            'bounds_tolerance': float(raw.get('bounds_tolerance', 1e-12)),
+            'window_generations': int(raw.get('window_generations', 20)),
+            'relative_tolerance': float(raw.get('relative_tolerance', 0.005)),
+            'minimum_generations': int(raw.get('minimum_generations', 0)),
+            'consecutive_generations': int(raw.get('consecutive_generations', 1)),
+            'stop_on_convergence': bool(raw.get('stop_on_convergence', False)),
+        }
+        if spec['algorithm'] != 'deap_exact_max_v1':
+            raise ValueError(f"unsupported hypervolume algorithm: {spec['algorithm']}")
+        if spec['window_generations'] < 1:
+            raise ValueError('hypervolume window_generations must be >= 1')
+        if spec['relative_tolerance'] <= 0:
+            raise ValueError('hypervolume relative_tolerance must be > 0')
+        if spec['minimum_generations'] < spec['window_generations']:
+            raise ValueError('minimum_generations must cover the HV window')
+        if spec['consecutive_generations'] < 1:
+            raise ValueError('consecutive_generations must be >= 1')
+        return spec
+
+    def normalized_hypervolume(self, individuals) -> float:
+        """Exact hypervolume of a feasible archive under a frozen normalization."""
+        if self.hypervolume_spec is None:
+            return math.nan
+        values = [
+            list(map(float, ind.fitness.values)) for ind in individuals
+            if self._fitness_is_feasible(ind.fitness.values)
+        ]
+        return self.normalized_hypervolume_values(values)
+
+    def normalized_hypervolume_values(self, objective_values) -> float:
+        """Exact normalized HV for rows ordered like evaluator.objectives."""
+        if self.hypervolume_spec is None:
+            return math.nan
+        values = np.asarray(objective_values, dtype=float)
+        if values.size == 0:
+            return 0.0
+        if values.ndim != 2 or values.shape[1] != self.n_obj:
+            raise ValueError('hypervolume values have the wrong shape')
+        lower = np.asarray(self.hypervolume_spec['lower'], dtype=float)
+        upper = np.asarray(self.hypervolume_spec['upper'], dtype=float)
+        tolerance = float(self.hypervolume_spec['bounds_tolerance'])
+        below = values < lower - tolerance
+        above = values > upper + tolerance
+        if below.any() or above.any():
+            row, column = np.argwhere(below | above)[0]
+            objective = self.hypervolume_spec['objectives'][int(column)]
+            raise ValueError(
+                'HV_OBJECTIVE_OUT_OF_NORMALIZATION_BOUNDS: '
+                f'{objective}={values[row, column]} outside '
+                f'[{lower[column]}, {upper[column]}]'
+            )
+        normalized = (np.clip(values, lower, upper) - lower) / (upper - lower)
+        normalized = np.unique(normalized, axis=0)
+        reference = np.asarray(
+            self.hypervolume_spec['reference_point_normalized'], dtype=float
+        )
+        contributes = np.all(normalized > reference, axis=1)
+        if not contributes.any():
+            return 0.0
+        # DEAP's C implementation uses minimization semantics.  Negating both
+        # points and reference preserves the volume for maximization.
+        return float(deap_hv.hypervolume(-normalized[contributes], -reference))
 
     def _setup_deap(self):
         """Configure DEAP creator and toolbox."""
@@ -871,9 +980,15 @@ class NSGAOptimizer:
             and all(value > INFEASIBLE_PENALTY / 2 for value in values)
         )
 
-    def _evaluate_invalid(self, individuals) -> None:
+    def _evaluate_invalid(self, individuals, generation: Optional[int] = None,
+                          phase: str = 'optimization') -> None:
         """Evaluate individuals and retain a gradient inside infeasible space."""
-        for individual in individuals:
+        for index, individual in enumerate(individuals):
+            if hasattr(self.evaluator, 'evaluation_context'):
+                self.evaluator.evaluation_context = {
+                    'phase': phase, 'generation': generation,
+                    'individual_index': index,
+                }
             raw_fitness = tuple(self.toolbox.evaluate(individual))
             if self._fitness_is_feasible(raw_fitness):
                 individual.fitness.values = raw_fitness
@@ -915,10 +1030,11 @@ class NSGAOptimizer:
             return float(value)
 
         return {
-            'schema_version': '0.1',
+            'schema_version': '0.2',
             'optimizer_signature': {
                 'algorithm': self.algorithm,
                 'population_size': self.pop_size,
+                'maximum_generations': self.n_gen,
                 'n_objectives': self.n_obj,
                 'n_variables': self.n_vars,
                 'lower_bounds': self.lb,
@@ -930,6 +1046,7 @@ class NSGAOptimizer:
                 'archive_tolerance': self.archive_tol,
                 'seed': self.seed,
                 'constraint_handling': 'normalized_penalty_v1',
+                'hypervolume': self.hypervolume_spec,
             },
             'generation': generation,
             'population': [
@@ -1015,7 +1132,7 @@ class NSGAOptimizer:
         logbook.header = ['gen', 'n_feasible'] + [f'max_obj{i}' for i in range(self.n_obj)]
 
         if resume_state is None:
-            self._evaluate_invalid(pop)
+            self._evaluate_invalid(pop, generation=0)
             archive.update(ind for ind in pop if self._fitness_is_feasible(ind.fitness.values))
 
         # Apply selection once to assign crowding distance. A checkpoint stores
@@ -1043,7 +1160,7 @@ class NSGAOptimizer:
 
             # Evaluate invalid individuals
             invalid = [ind for ind in offspring if not ind.fitness.valid]
-            self._evaluate_invalid(invalid)
+            self._evaluate_invalid(invalid, generation=gen)
 
             # Combine and select next generation
             combined = pop + offspring
@@ -1066,6 +1183,32 @@ class NSGAOptimizer:
                 for ind in pop
                 if not self._fitness_is_feasible(ind.fitness.values)
             ]
+            normalized_hv = self.normalized_hypervolume(archive)
+            hv_relative_improvement = None
+            hv_converged = None
+            hv_streak = 0
+            if self.hypervolume_spec is not None:
+                window = self.hypervolume_spec['window_generations']
+                if len(self.generation_metrics) >= window:
+                    previous_hv = float(
+                        self.generation_metrics[-window]['normalized_hypervolume']
+                    )
+                    if previous_hv > 1e-15:
+                        hv_relative_improvement = (
+                            normalized_hv - previous_hv
+                        ) / previous_hv
+                        hv_converged = bool(
+                            hv_relative_improvement >= -1e-12
+                            and hv_relative_improvement
+                            < self.hypervolume_spec['relative_tolerance']
+                        )
+                    else:
+                        hv_converged = False
+                prior_streak = (
+                    int(self.generation_metrics[-1].get('hv_convergence_streak', 0))
+                    if self.generation_metrics else 0
+                )
+                hv_streak = prior_streak + 1 if hv_converged else 0
             metric = {
                 'generation': gen,
                 'n_evaluated': len(invalid),
@@ -1079,12 +1222,36 @@ class NSGAOptimizer:
                 'min_constraint_violation': (
                     min(infeasible_violations) if infeasible_violations else 0.0
                 ),
+                'normalized_hypervolume': (
+                    normalized_hv if self.hypervolume_spec is not None else None
+                ),
+                'hv_relative_improvement': hv_relative_improvement,
+                'hv_window_generations': (
+                    self.hypervolume_spec['window_generations']
+                    if self.hypervolume_spec is not None else None
+                ),
+                'hv_converged': hv_converged,
+                'hv_convergence_streak': hv_streak,
                 'elapsed_s': time.time() - t0,
             }
             self.generation_metrics.append(metric)
+            self.completed_generations = gen
             if checkpoint_every > 0 and checkpoint_callback is not None \
             and gen % checkpoint_every == 0:
                 checkpoint_callback(self.export_checkpoint(gen, pop, archive))
+
+            should_stop = bool(
+                self.hypervolume_spec is not None
+                and self.hypervolume_spec['stop_on_convergence']
+                and gen >= self.hypervolume_spec['minimum_generations']
+                and hv_streak >= self.hypervolume_spec['consecutive_generations']
+            )
+            if should_stop:
+                self.stopping_reason = 'hypervolume_converged'
+                if checkpoint_callback is not None \
+                and (checkpoint_every <= 0 or gen % checkpoint_every != 0):
+                    checkpoint_callback(self.export_checkpoint(gen, pop, archive))
+                break
 
             if verbose and gen % 10 == 0:
                 elapsed = time.time() - t0
@@ -1096,6 +1263,9 @@ class NSGAOptimizer:
             ind for ind in archive
             if self._fitness_is_feasible(ind.fitness.values)
         ]
+
+        if self.completed_generations == 0:
+            self.completed_generations = start_generation
 
         return pareto_front, logbook
 

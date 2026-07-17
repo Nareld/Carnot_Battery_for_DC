@@ -15,6 +15,17 @@
 多 seed、任务级多进程、独立 run-id、目录锁、原子输出、代检查点、恢复、跨代
 Pareto archive、失败 JSON/CSV 索引和前沿物理验收。
 
+S2 优化使用配置中冻结的目标归一化域和参考点逐代计算 normalized
+hypervolume。当前预生产/正式门设置为最多 250 代、至少 150 代；只有连续 5 代均满足
+“相对 20 代前的 HV 改善小于 0.5%”才提前停止。归一化域越界会作为配置/科学错误
+终止任务，不进行动态缩放或静默裁剪。
+
+优化 archive 不直接作为科学前沿发布。每个任务结束后会由两个独立 Python/CoolProp
+子进程复算全部 raw archive；任一次不可行或两次 KPI 超容差不一致的点进入
+`front_quarantine.csv`。两次稳定的点以复算 KPI 重新进行非支配筛选，权威结果写入
+`pareto.csv`，完整历史和复验台账分别保存在 `pareto_archive_raw.csv` 与
+`front_revalidation.csv`。
+
 开发验收示例：
 
 ```bash

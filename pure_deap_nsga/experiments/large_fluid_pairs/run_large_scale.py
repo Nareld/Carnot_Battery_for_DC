@@ -91,17 +91,18 @@ def atomic_csv(path: Path, rows: list[dict[str, Any]], fieldnames: list[str]) ->
 
 
 def write_checksums(run_dir: Path) -> None:
-    paths = []
-    for relative_root in ["config", "outputs", "failures"]:
-        root = run_dir / relative_root
-        if root.exists():
-            paths.extend(path for path in root.rglob("*") if path.is_file()
-                         and not path.name.endswith(".tmp"))
+    target = run_dir / "metadata" / "checksums.sha256"
+    paths = [
+        path for path in run_dir.rglob("*")
+        if path.is_file()
+        and path != target
+        and path.name != ".lock"
+        and not path.name.endswith(".tmp")
+    ]
     lines = [
         f"{sha256(path)}  {path.relative_to(run_dir)}"
         for path in sorted(paths)
     ]
-    target = run_dir / "metadata" / "checksums.sha256"
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(".sha256.tmp")
     temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -505,7 +506,19 @@ def write_failures(task: dict[str, Any], evaluator, config: dict[str, Any],
                     "component": attempt["component"],
                     "method": attempt["method"],
                     "solver_name": attempt["solver_name"],
+                    "is_fallback": attempt["is_fallback"],
+                    "fallback_from": attempt["fallback_from"],
+                    "x0": json.dumps(attempt["x0"]),
+                    "bounds": json.dumps(attempt["bounds"]),
+                    "x_final": json.dumps(attempt["x_final"]),
+                    "residual_vector": json.dumps(attempt["residual_vector"]),
+                    "residual_l2": attempt["residual_l2"],
+                    "residual_linf": attempt["residual_linf"],
+                    "residual_tol": attempt["residual_tol"],
                     "success": attempt["success"],
+                    "status": attempt["status"], "ier": attempt["ier"],
+                    "nfev": attempt["nfev"], "njev": attempt["njev"],
+                    "nit": attempt["nit"], "elapsed_ms": attempt["elapsed_ms"],
                     "message": attempt["message"],
                 })
         primary_issue = next(
@@ -519,7 +532,9 @@ def write_failures(task: dict[str, Any], evaluator, config: dict[str, Any],
             "run": {
                 "run_id": task["run_id"], "case_id": task["run_id"],
                 "seed": task["seed"], "algorithm": config["optimization"].get("algorithm", "NSGA2"),
-                "generation": None, "individual_index": None,
+                "generation": info.get("generation"),
+                "individual_index": info.get("individual_index"),
+                "evaluation_phase": info.get("evaluation_phase"),
                 "worker_pid": os.getpid(), "hostname": socket.gethostname(),
             },
             "model": {
@@ -575,11 +590,15 @@ def write_failures(task: dict[str, Any], evaluator, config: dict[str, Any],
         failed_rows.append({
             "evaluation_id": evaluation_id, "primary_code": primary,
             "deepest_stage": deepest_stage,
+            "evaluation_phase": info.get("evaluation_phase"),
+            "generation": info.get("generation"),
+            "individual_index": info.get("individual_index"),
             "constraint_violation": float(info.get("constraint_violation", 10.0)),
             **{name: value for name, value in zip(VARIABLE_NAMES, x)},
             "record_path": str(relative),
         })
     failed_fields = ["evaluation_id", "primary_code", "deepest_stage",
+                     "evaluation_phase", "generation", "individual_index",
                      "constraint_violation", *VARIABLE_NAMES, "record_path"]
     issue_fields = ["evaluation_id", "issue_id", "stage_code", "code", "severity",
                     "component", "class", "method", "message"]
@@ -587,9 +606,240 @@ def write_failures(task: dict[str, Any], evaluator, config: dict[str, Any],
     atomic_csv(run_dir / "failures" / "failure_issues.csv", issue_rows, issue_fields)
     atomic_csv(run_dir / "failures" / "solver_attempts.csv", solver_rows, [
         "evaluation_id", "attempt_index", "component", "method", "solver_name",
-        "success", "message",
+        "is_fallback", "fallback_from", "x0", "bounds", "x_final",
+        "residual_vector", "residual_l2", "residual_linf", "residual_tol",
+        "success", "status", "ier", "nfev", "njev", "nit", "elapsed_ms",
+        "message",
     ])
     return len(failed_rows)
+
+
+def run_front_revalidation_worker(job_path: Path) -> int:
+    """Re-evaluate one raw archive in a fresh Python/CoolProp process."""
+    import pandas as pd
+    from deap_optimizer import CBEvaluator
+
+    job = json.loads(job_path.read_text(encoding="utf-8"))
+    task = job["task"]
+    config = load_config(Path(task["config_path"]))
+    opt = dict(config["optimization"])
+    opt.update({
+        "population_size": task["population_size"],
+        "n_generations": task["n_generations"],
+        "seed": task["seed"],
+        "diagnostics_enabled": True,
+    })
+    evaluator = CBEvaluator(
+        wp=config["working_points"][task["wp"]], cfg=opt,
+        cb_class_name=task["cb_class"], fluid_hp=task["fluid_hp"],
+        fluid_he=task["fluid_he"], objectives=opt["objectives"],
+        economic_params=opt.get("economic_params"),
+    )
+    raw = pd.read_csv(job["raw_archive_path"])
+    rows = []
+    for archive_index, row in raw.iterrows():
+        evaluator.evaluation_context = {
+            "phase": f"front_revalidation_repeat_{job['repeat_index']}",
+            "generation": None, "individual_index": int(archive_index),
+        }
+        values = tuple(evaluator.evaluate(row[VARIABLE_NAMES].tolist()))
+        info = evaluator.last_eval_info
+        feasible = bool(info.get("feasible")) and all(
+            math.isfinite(float(value)) for value in values
+        )
+        result = {
+            "archive_index": int(archive_index),
+            "feasible": feasible,
+            "primary_code": info.get("primary_code") or "",
+            "constraint_violation": float(info.get("constraint_violation", 0.0)),
+        }
+        for objective, value in zip(opt["objectives"], values):
+            result[objective] = float(value) if feasible else None
+        rows.append(result)
+    atomic_csv(
+        Path(job["output_path"]), rows,
+        ["archive_index", "feasible", "primary_code", "constraint_violation",
+         *opt["objectives"]],
+    )
+    return 0
+
+
+def nondominated_mask(values) -> list[bool]:
+    """Return the exact maximization non-dominated mask for a small archive."""
+    import numpy as np
+
+    matrix = np.asarray(values, dtype=float)
+    keep = np.ones(len(matrix), dtype=bool)
+    for index, candidate in enumerate(matrix):
+        dominates = np.all(matrix >= candidate, axis=1) \
+            & np.any(matrix > candidate, axis=1)
+        dominates[index] = False
+        if dominates.any():
+            keep[index] = False
+    return keep.tolist()
+
+
+def revalidate_archive(task: dict[str, Any], raw_df, optimizer,
+                       config: dict[str, Any], run_dir: Path):
+    """Certify an archive with two isolated repeats and re-screen dominance."""
+    import numpy as np
+    import pandas as pd
+
+    spec = dict(config["optimization"].get("front_revalidation", {}) or {})
+    if not spec.get("enabled", False):
+        raise ValueError("formal archive export requires front_revalidation.enabled")
+    repeats = int(spec.get("independent_repeats", 2))
+    if repeats < 2:
+        raise ValueError("front revalidation requires at least two repeats")
+    rtol = float(spec.get("relative_tolerance", 1e-8))
+    atol = float(spec.get("absolute_tolerance", 1e-10))
+    objectives = list(config["optimization"]["objectives"])
+    output_dir = run_dir / "outputs"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = output_dir / "pareto_archive_raw.csv"
+    if raw_df.empty:
+        raw_df = pd.DataFrame(columns=VARIABLE_NAMES + objectives)
+    temporary = raw_path.with_suffix(".csv.tmp")
+    raw_df.to_csv(temporary, index=False)
+    os.replace(temporary, raw_path)
+
+    if raw_df.empty:
+        ledger_columns = [
+            "archive_index", *VARIABLE_NAMES, *objectives,
+            "all_repeats_feasible", "repeat_consistent",
+            "stored_fitness_match", "certified_for_rescreen",
+            "kept_in_certified_pareto", "quarantine_reason",
+        ]
+        atomic_csv(output_dir / "front_revalidation.csv", [], ledger_columns)
+        atomic_csv(output_dir / "front_quarantine.csv", [], ledger_columns)
+        summary = {
+            "schema_version": "1.0", "raw_archive_size": 0,
+            "independent_repeats": repeats, "revalidation_solver_calls": 0,
+            "all_repeats_feasible_count": 0, "repeat_consistent_count": 0,
+            "stored_fitness_drift_count": 0, "quarantined_count": 0,
+            "certified_candidate_count": 0, "certified_pareto_size": 0,
+            "relative_tolerance": rtol, "absolute_tolerance": atol,
+            "certified_normalized_hypervolume": 0.0,
+        }
+        atomic_json(output_dir / "front_revalidation_summary.json", summary)
+        return raw_df, summary
+
+    repeat_frames = []
+    for repeat_index in range(1, repeats + 1):
+        job_path = run_dir / "config" / f"front_revalidation_repeat_{repeat_index}.json"
+        repeat_path = output_dir / f"front_revalidation_repeat_{repeat_index}.csv"
+        atomic_json(job_path, {
+            "schema_version": "1.0", "repeat_index": repeat_index,
+            "task": task, "raw_archive_path": str(raw_path),
+            "output_path": str(repeat_path),
+        })
+        completed = subprocess.run(
+            [sys.executable, "-X", "faulthandler", str(Path(__file__).resolve()),
+             "--front-revalidation-worker", str(job_path)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        if completed.returncode != 0:
+            raise RuntimeError(
+                f"front revalidation repeat {repeat_index} failed: "
+                f"{completed.stdout[-2000:]} {completed.stderr[-2000:]}"
+            )
+        frame = pd.read_csv(repeat_path).sort_values("archive_index")
+        if len(frame) != len(raw_df) or frame["archive_index"].tolist() != list(range(len(raw_df))):
+            raise ValueError("front revalidation result does not match raw archive")
+        repeat_frames.append(frame.reset_index(drop=True))
+
+    ledger = raw_df.reset_index(drop=True).copy()
+    ledger.insert(0, "archive_index", range(len(ledger)))
+    all_feasible = np.ones(len(ledger), dtype=bool)
+    repeated_values = []
+    primary_codes = []
+    for repeat_index, frame in enumerate(repeat_frames, 1):
+        feasible = frame["feasible"].map(
+            lambda value: value is True or str(value).strip().lower() == "true"
+        ).to_numpy(dtype=bool)
+        all_feasible &= feasible
+        primary_codes.append(frame["primary_code"].fillna("").astype(str))
+        values = frame[objectives].to_numpy(dtype=float)
+        repeated_values.append(values)
+        ledger[f"repeat_{repeat_index}_feasible"] = feasible
+        ledger[f"repeat_{repeat_index}_primary_code"] = primary_codes[-1]
+        ledger[f"repeat_{repeat_index}_constraint_violation"] = frame[
+            "constraint_violation"
+        ].to_numpy(dtype=float)
+        for objective in objectives:
+            ledger[f"repeat_{repeat_index}_{objective}"] = frame[objective]
+
+    repeat_consistent = all_feasible.copy()
+    base_values = repeated_values[0]
+    for values in repeated_values[1:]:
+        repeat_consistent &= np.all(
+            np.isclose(base_values, values, rtol=rtol, atol=atol, equal_nan=False),
+            axis=1,
+        )
+    certified_values = np.mean(np.stack(repeated_values), axis=0)
+    stable = all_feasible & repeat_consistent & np.all(
+        np.isfinite(certified_values), axis=1
+    )
+    stored_values = raw_df[objectives].to_numpy(dtype=float)
+    stored_match = stable & np.all(
+        np.isclose(stored_values, certified_values, rtol=rtol, atol=atol), axis=1
+    )
+    ledger["all_repeats_feasible"] = all_feasible
+    ledger["repeat_consistent"] = repeat_consistent
+    ledger["stored_fitness_match"] = stored_match
+    ledger["certified_for_rescreen"] = stable
+    for column, objective in enumerate(objectives):
+        ledger[f"certified_{objective}"] = np.where(
+            stable, certified_values[:, column], np.nan
+        )
+        ledger[f"stored_to_certified_abs_drift_{objective}"] = np.where(
+            stable, np.abs(stored_values[:, column] - certified_values[:, column]),
+            np.nan,
+        )
+
+    certified = raw_df.loc[stable].copy().reset_index(drop=True)
+    certified_indices = np.flatnonzero(stable)
+    if not certified.empty:
+        certified.loc[:, objectives] = certified_values[stable]
+        keep = np.asarray(nondominated_mask(certified[objectives].to_numpy()), dtype=bool)
+        certified = certified.loc[keep].reset_index(drop=True)
+        final_indices = set(certified_indices[keep].tolist())
+    else:
+        final_indices = set()
+    ledger["kept_in_certified_pareto"] = ledger["archive_index"].isin(final_indices)
+    ledger["quarantine_reason"] = ""
+    ledger.loc[~all_feasible, "quarantine_reason"] = "REVALIDATION_INFEASIBLE"
+    ledger.loc[all_feasible & ~repeat_consistent, "quarantine_reason"] = \
+        "REVALIDATION_REPEAT_MISMATCH"
+
+    atomic_csv(
+        output_dir / "front_revalidation.csv", ledger.to_dict("records"),
+        list(ledger.columns),
+    )
+    quarantine = ledger.loc[~stable]
+    atomic_csv(
+        output_dir / "front_quarantine.csv", quarantine.to_dict("records"),
+        list(ledger.columns),
+    )
+    summary = {
+        "schema_version": "1.0", "raw_archive_size": len(raw_df),
+        "independent_repeats": repeats,
+        "revalidation_solver_calls": len(raw_df) * repeats,
+        "all_repeats_feasible_count": int(all_feasible.sum()),
+        "repeat_consistent_count": int(repeat_consistent.sum()),
+        "stored_fitness_drift_count": int((stable & ~stored_match).sum()),
+        "quarantined_count": int((~stable).sum()),
+        "certified_candidate_count": int(stable.sum()),
+        "certified_pareto_size": len(certified),
+        "relative_tolerance": rtol, "absolute_tolerance": atol,
+        "certified_normalized_hypervolume": (
+            optimizer.normalized_hypervolume_values(
+                certified[objectives].to_numpy(dtype=float)
+            ) if not certified.empty else 0.0
+        ),
+    }
+    atomic_json(output_dir / "front_revalidation_summary.json", summary)
+    return certified, summary
 
 
 def validate_front(df, evaluator, objectives: list[str]) -> list[str]:
@@ -673,6 +923,8 @@ def run_worker(task_path: Path) -> int:
         )
         mode = task.get("mode", "optimize")
         sampling_rows = None
+        revalidation_summary = None
+        optimizer = None
         if mode == "s0":
             x = [
                 float((lo + hi) / 2)
@@ -770,7 +1022,10 @@ def run_worker(task_path: Path) -> int:
                 checkpoint_every=task["checkpoint_every"],
                 checkpoint_callback=save_checkpoint,
             )
-            df = optimizer.results_to_dataframe(front)
+            raw_df = optimizer.results_to_dataframe(front)
+            df, revalidation_summary = revalidate_archive(
+                task, raw_df, optimizer, config, run_dir
+            )
             generation_metrics = optimizer.generation_metrics
             archive_size = len(front)
         if not df.empty:
@@ -812,7 +1067,9 @@ def run_worker(task_path: Path) -> int:
             generation_metrics,
             ["generation", "n_evaluated", "n_feasible", "population_size",
              "front_size", "archive_size", "unique_ratio",
-             "min_constraint_violation", "elapsed_s"],
+             "min_constraint_violation", "normalized_hypervolume",
+             "hv_relative_improvement", "hv_window_generations",
+             "hv_converged", "hv_convergence_streak", "elapsed_s"],
         )
         failure_count = write_failures(task, evaluator, config, commit, dirty)
         import resource
@@ -836,14 +1093,61 @@ def run_worker(task_path: Path) -> int:
             "failure_count": failure_count, "pareto_size": len(df),
             "archive_size": archive_size, "validation_errors": [],
         }
+        if optimizer is not None:
+            final_metric = generation_metrics[-1] if generation_metrics else {}
+            summary.update({
+                "completed_generations": optimizer.completed_generations,
+                "stopping_reason": optimizer.stopping_reason,
+                "final_normalized_hypervolume": final_metric.get(
+                    "normalized_hypervolume"
+                ),
+                "final_hv_relative_improvement": final_metric.get(
+                    "hv_relative_improvement"
+                ),
+                "final_hv_window_converged": final_metric.get("hv_converged"),
+                "final_hv_convergence_streak": final_metric.get(
+                    "hv_convergence_streak", 0
+                ),
+                "hv_converged": (
+                    optimizer.stopping_reason == "hypervolume_converged"
+                ),
+                "hypervolume_spec": optimizer.hypervolume_spec,
+            })
+        if revalidation_summary is not None:
+            summary.update({
+                "optimization_evaluation_count": len(evaluator.diagnostics_records),
+                "front_revalidation_solver_calls": revalidation_summary[
+                    "revalidation_solver_calls"
+                ],
+                "total_solver_calls": (
+                    len(evaluator.diagnostics_records)
+                    + revalidation_summary["revalidation_solver_calls"]
+                ),
+                "raw_archive_size": revalidation_summary["raw_archive_size"],
+                "revalidation_quarantined_count": revalidation_summary[
+                    "quarantined_count"
+                ],
+                "revalidation_stored_fitness_drift_count": revalidation_summary[
+                    "stored_fitness_drift_count"
+                ],
+                "certified_normalized_hypervolume": revalidation_summary[
+                    "certified_normalized_hypervolume"
+                ],
+                "hypervolume_certification_loss": (
+                    float(summary.get("final_normalized_hypervolume") or 0.0)
+                    - revalidation_summary["certified_normalized_hypervolume"]
+                ),
+            })
         if mode == "s1":
             summary.update({
                 "sample_count": len(sampling_rows),
                 "feasible_rate": len(df) / len(sampling_rows),
             })
         atomic_json(output_dir / "summary.json", summary)
-        write_checksums(run_dir)
         manifest.update(summary)
+        manifest["front_revalidation_spec"] = config["optimization"].get(
+            "front_revalidation"
+        )
         manifest.update({"status": status, "end_time_utc": utc_now(), "exit_code": 0})
         atomic_json(run_dir / "metadata" / "manifest.json", manifest)
         set_status(run_dir, status)
@@ -924,6 +1228,12 @@ def run_scheduler(tasks: list[dict[str, Any]], workers: int,
             item["log_handle"].close()
             if state != "FINISHED":
                 mark_external_failure(task, state, detail, process.returncode)
+            try:
+                write_checksums(Path(task["run_dir"]))
+            except Exception as exc:
+                state = "FAILED"
+                detail = f"final checksum generation failed: {type(exc).__name__}: {exc}"
+                mark_external_failure(task, state, detail, process.returncode)
             results.append({
                 "run_id": task["run_id"], "scheduler_status": state,
                 "exit_code": process.returncode, "elapsed_s": elapsed,
@@ -946,6 +1256,22 @@ def run_scheduler(tasks: list[dict[str, Any]], workers: int,
                     "feasible_count": manifest.get("feasible_count"),
                     "failure_count": manifest.get("failure_count"),
                     "pareto_size": manifest.get("pareto_size"),
+                    "completed_generations": manifest.get("completed_generations"),
+                    "stopping_reason": manifest.get("stopping_reason"),
+                    "final_normalized_hypervolume": manifest.get(
+                        "final_normalized_hypervolume"
+                    ),
+                    "final_hv_relative_improvement": manifest.get(
+                        "final_hv_relative_improvement"
+                    ),
+                    "hv_converged": manifest.get("hv_converged"),
+                    "raw_archive_size": manifest.get("raw_archive_size"),
+                    "front_revalidation_solver_calls": manifest.get(
+                        "front_revalidation_solver_calls"
+                    ),
+                    "revalidation_quarantined_count": manifest.get(
+                        "revalidation_quarantined_count"
+                    ),
                     "manifest_path": str(manifest_path),
                 })
             del running[pid]
@@ -1028,7 +1354,10 @@ def main() -> int:
     parser.add_argument("--task-timeout", type=float, default=86400.0)
     parser.add_argument("--allow-dirty", action="store_true")
     parser.add_argument("--worker", type=Path)
+    parser.add_argument("--front-revalidation-worker", type=Path)
     args = parser.parse_args()
+    if args.front_revalidation_worker:
+        return run_front_revalidation_worker(args.front_revalidation_worker)
     if args.worker:
         return run_worker(args.worker)
     if args.config is None or args.data_root is None:
@@ -1052,6 +1381,19 @@ def main() -> int:
         parser.error(
             "formal S1-S5 runs require experiment.status=approved_for_full_run"
         )
+    if args.stage.upper() == "S2" and args.mode == "optimize":
+        hv_spec = config.get("optimization", {}).get("hypervolume", {})
+        revalidation_spec = config.get("optimization", {}).get(
+            "front_revalidation", {}
+        )
+        if not hv_spec.get("enabled", False):
+            parser.error("formal S2 requires optimization.hypervolume.enabled")
+        if not revalidation_spec.get("enabled", False):
+            parser.error("formal S2 requires front_revalidation.enabled")
+        if args.generations < int(hv_spec.get("minimum_generations", 0)):
+            parser.error(
+                "formal S2 generations must be >= hypervolume.minimum_generations"
+            )
     if args.resume_from and (
         len(args.wp or []) != 1 or len(args.cfg or []) != 1
         or not args.fluid_hp or not args.fluid_he or len(args.seed) != 1
@@ -1067,6 +1409,8 @@ def main() -> int:
         "schema_version": "0.1", "batch_id": batch_id, "stage": args.stage,
         "status": "RUNNING", "git_commit": commit, "git_dirty": dirty,
         "config_path": str(args.config.resolve()), "config_sha256": sha256(args.config.resolve()),
+        "task_list_path": str(args.task_list.resolve()) if args.task_list else None,
+        "task_list_sha256": sha256(args.task_list.resolve()) if args.task_list else None,
         "workers": args.workers, "task_count": len(tasks), "start_time_utc": utc_now(),
     }
     atomic_json(batch_dir / "batch_manifest.json", batch_manifest)
@@ -1078,7 +1422,10 @@ def main() -> int:
         "scheduler_status", "terminal_status", "exit_code", "elapsed_s",
         "git_commit", "git_dirty", "config_sha256", "start_time_utc",
         "end_time_utc", "evaluation_count", "feasible_count", "failure_count",
-        "pareto_size", "run_dir", "manifest_path", "detail",
+        "pareto_size", "completed_generations", "stopping_reason",
+        "final_normalized_hypervolume", "final_hv_relative_improvement",
+        "hv_converged", "raw_archive_size", "front_revalidation_solver_calls",
+        "revalidation_quarantined_count", "run_dir", "manifest_path", "detail",
     ])
     accepted = all(row["scheduler_status"] == "FINISHED" for row in results)
     batch_manifest.update({

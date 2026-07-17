@@ -1,5 +1,5 @@
 {
-  "_comment": "Exploratory 12x12 pure-fluid pool. Extra metadata is ignored by the current runner.",
+  "_comment": "Exploratory 12x12 pure-fluid pool with frozen S2 convergence and front-certification rules.",
   "working_points": {
     "DC-A": {"name": "DC-A", "label": "Air-cooled (Winter)", "T_hs": 35.0, "T_cs": 5.0, "delta_T": 30.0, "T_st_ht_min": 50.0, "T_st_ht_max": 120.0, "dT_st_sp_min": 15.0, "dT_st_sp_max": 60.0},
     "DC-B": {"name": "DC-B", "label": "Air-cooled (Summer)", "T_hs": 40.0, "T_cs": 25.0, "delta_T": 15.0, "T_st_ht_min": 55.0, "T_st_ht_max": 120.0, "dT_st_sp_min": 15.0, "dT_st_sp_max": 60.0},
@@ -47,7 +47,7 @@
   "optimization": {
     "algorithm": "NSGA2",
     "population_size": 48,
-    "n_generations": 50,
+    "n_generations": 250,
     "crossover_prob": 0.9,
     "mutation_prob": 0.1,
     "seed": 42,
@@ -57,6 +57,31 @@
       "R1234yf", "R290", "R600a", "R245fa", "R134a", "R152A"
     ],
     "objectives": ["eta_p2p", "energy_density_thermal", "exergy_efficiency"],
+    "hypervolume": {
+      "enabled": true,
+      "schema_version": "1.0",
+      "algorithm": "deap_exact_max_v1",
+      "objectives": ["eta_p2p", "energy_density_thermal", "exergy_efficiency"],
+      "normalization_bounds": {
+        "eta_p2p": [0.0, 1.0],
+        "energy_density_thermal": [0.0, 50.0],
+        "exergy_efficiency": [0.0, 1.0]
+      },
+      "reference_point_normalized": [0.0, 0.0, 0.0],
+      "bounds_tolerance": 1e-12,
+      "window_generations": 20,
+      "relative_tolerance": 0.005,
+      "minimum_generations": 150,
+      "consecutive_generations": 5,
+      "stop_on_convergence": true
+    },
+    "front_revalidation": {
+      "enabled": true,
+      "independent_repeats": 2,
+      "relative_tolerance": 1e-8,
+      "absolute_tolerance": 1e-10,
+      "require_all_feasible": true
+    },
     "dT_he_cs_gl": 10.0,
     "dT_hp_ev_pp": 5.0,
     "dT_hp_cd_pp": 3.0,
@@ -85,7 +110,10 @@
       },
       "S2_coarse": {
         "population_size": 48,
-        "generations": 50,
+        "minimum_generations": 150,
+        "maximum_generations": 250,
+        "hv_window_generations": 20,
+        "hv_relative_tolerance": 0.005,
         "seeds": [42]
       },
       "S4_confirmation": {

@@ -18,6 +18,7 @@
         "algorithm": {"type": "string"},
         "generation": {"type": ["integer", "null"]},
         "individual_index": {"type": ["integer", "null"]},
+        "evaluation_phase": {"type": ["string", "null"]},
         "worker_pid": {"type": ["integer", "null"]},
         "hostname": {"type": ["string", "null"]}
       }
