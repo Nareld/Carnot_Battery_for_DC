@@ -71,6 +71,7 @@
         "feasible": {"type": "boolean"},
         "penalized": {"type": "boolean"},
         "penalty_value": {"type": ["number", "null"]},
+        "constraint_violation": {"type": ["number", "null"], "exclusiveMinimum": 0},
         "primary_code": {"type": "string"},
         "secondary_codes": {"type": "array", "items": {"type": "string"}},
         "deepest_stage": {"type": "string"},

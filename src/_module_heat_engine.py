@@ -78,11 +78,16 @@ def _bounded_least_squares(function, x0, lower, upper, location, **options):
     if x0.shape != lower.shape or x0.shape != upper.shape \
     or not np.all(np.isfinite(x0)) \
     or not np.all(np.isfinite(lower)) \
-    or not np.all(np.isfinite(upper)) \
-    or np.any(lower >= upper):
+    or not np.all(np.isfinite(upper)):
         raise ValueError(
             f'SOLVER_INITIAL_GUESS_OUT_OF_BOUNDS at {location}: '
             f'x0={x0.tolist()}, lower={lower.tolist()}, upper={upper.tolist()}'
+        )
+    if np.any(lower >= upper):
+        raise ValueError(
+            f'SOLVER_PRESSURE_INTERVAL_DEGENERATE at {location}: '
+            f'x0={x0.tolist()}, lower={lower.tolist()}, upper={upper.tolist()}, '
+            f'width={(upper-lower).tolist()}'
         )
     margin = np.maximum((upper - lower) * 1e-10, 1e-6)
     safe_x0 = np.clip(x0, lower + margin, upper - margin)
@@ -222,7 +227,7 @@ class SBORC(DiagnosticMixin):
                     self.check_consistency()
                 except Exception as exc:
                     self._add_issue('EVALUATE_CYCLE_EXCEPTION', 'HE', 'evaluate',
-                                  f'{type(exc).__name__}: {str(exc)[:200]}',
+                                  f'{type(exc).__name__}: {str(exc)[:1000]}',
                                   exception_type=type(exc).__name__)
                     self.error = True
 
@@ -733,10 +738,12 @@ class SBORC(DiagnosticMixin):
              p_he_3x=self.p_he_3x, p_max=self.p_he_3x_max):
             return
         if f(abs(self.resi_1) > 1e-2, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
-             'check_consistency', 'residual 1 too large', residual=abs(self.resi_1)):
+             'check_consistency', 'residual 1 too large',
+             residual=abs(self.resi_1), residual_tol=1e-2):
             return
         if f(abs(self.resi_2) > 1e-2, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
-             'check_consistency', 'residual 2 too large', residual=abs(self.resi_2)):
+             'check_consistency', 'residual 2 too large',
+             residual=abs(self.resi_2), residual_tol=1e-2):
             return
 
         if not bool(self.parameters['wet_ex']):
@@ -1490,10 +1497,12 @@ class SRORC(SBORC):
              p_he_3x=self.p_he_3x, p_max=self.p_he_3x_max):
             return
         if f(abs(self.resi_1) > 1e-2, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
-             'check_consistency', 'residual 1 too large', residual=abs(self.resi_1)):
+             'check_consistency', 'residual 1 too large',
+             residual=abs(self.resi_1), residual_tol=1e-2):
             return
         if f(abs(self.resi_2) > 1e-2, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
-             'check_consistency', 'residual 2 too large', residual=abs(self.resi_2)):
+             'check_consistency', 'residual 2 too large',
+             residual=abs(self.resi_2), residual_tol=1e-2):
             return
 
         if not bool(self.parameters['wet_ex']):
@@ -2186,10 +2195,12 @@ class TBORC(SBORC):
              p_he_3=self.p_he_3, p_min=self.p_he_3_min):
             return
         if f(abs(self.resi_1) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
-             'check_consistency', 'residual 1 too large', residual=abs(self.resi_1)):
+             'check_consistency', 'residual 1 too large',
+             residual=abs(self.resi_1), residual_tol=1.0):
             return
         if f(abs(self.resi_2) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
-             'check_consistency', 'residual 2 too large', residual=abs(self.resi_2)):
+             'check_consistency', 'residual 2 too large',
+             residual=abs(self.resi_2), residual_tol=1.0):
             return
 
         if not bool(self.parameters['wet_ex']):
@@ -2911,14 +2922,16 @@ class TRORC(TBORC):
              p_he_3=self.p_he_3, p_min=self.p_he_3_min):
             return
         if f(abs(self.resi_1) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
-             'check_consistency', 'residual 1 too large', residual=abs(self.resi_1)):
+             'check_consistency', 'residual 1 too large',
+             residual=abs(self.resi_1), residual_tol=1.0):
             return
         if f(abs(self.resi_2) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
-             'check_consistency', 'residual 2 too large', residual=abs(self.resi_2)):
+             'check_consistency', 'residual 2 too large',
+             residual=abs(self.resi_2), residual_tol=1.0):
             return
         if f(abs(self.resi_rec) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HE',
              'check_consistency', 'recuperator residual too large',
-             residual=abs(self.resi_rec)):
+             residual=abs(self.resi_rec), residual_tol=1.0):
             return
         
         if not bool(self.parameters['wet_ex']):

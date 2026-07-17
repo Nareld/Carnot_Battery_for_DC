@@ -117,7 +117,7 @@ class SBVCHP_SBORC_STES2T(DiagnosticMixin):
                     self.check_consistency()
                 except Exception as exc:
                     self._add_issue('EVALUATE_CYCLE_EXCEPTION', 'CB', 'evaluate',
-                                  f'{type(exc).__name__}: {str(exc)[:200]}',
+                                  f'{type(exc).__name__}: {str(exc)[:1000]}',
                                   exception_type=type(exc).__name__)
                     self.error = True
 

@@ -169,6 +169,49 @@ def pair_gate(config: dict[str, Any], wp_key: str, hp: str, he: str) -> dict[str
     opt = config["optimization"]
     pressure_window = config.get("experiment", {}).get("pressure_window_bar", [0.5, 40.0])
     p_min, p_max = (float(value) * 1e5 for value in pressure_window)
+    # The HP exergy calculation uses the cold-sink state as its fixed
+    # thermodynamic reference.  This state is independent of the optimizer,
+    # so a fluid that cannot represent it must be rejected before a task is
+    # launched.  The previous saturation-only gate missed CycloHexane/DC-E,
+    # whose 5 °C reference lies below its triple point.
+    reference_pressure = 1.0e5
+    reference_temperature_k = float(wp["T_cs"]) + 273.15
+    try:
+        hp_triple_k = float(PropsSI("Ttriple", hp))
+        if reference_temperature_k <= hp_triple_k + 1.0:
+            issues.append({
+                "code": "FLUID_FILTER_REFERENCE_STATE_BELOW_TRIPLE",
+                "component": "config", "cls": "LargeScaleGate",
+                "method": "pair_gate",
+                "message": "HP fixed reference temperature is below the fluid domain",
+                "severity": "error",
+                "values": {
+                    "side": "HP", "fluid": hp,
+                    "pressure_Pa": reference_pressure,
+                    "temperature_K": reference_temperature_k,
+                    "Ttriple_K": hp_triple_k,
+                    "margin_K": reference_temperature_k - hp_triple_k,
+                    "location": "CBEvaluator.params.p_ref/T_ref",
+                },
+            })
+        else:
+            # Query both properties used by the exergy reference calculation.
+            PropsSI("Hmass", "P", reference_pressure, "T", reference_temperature_k, hp)
+            PropsSI("Smass", "P", reference_pressure, "T", reference_temperature_k, hp)
+    except Exception as exc:
+        issues.append({
+            "code": "FLUID_FILTER_REFERENCE_STATE_QUERY_FAILED",
+            "component": "config", "cls": "LargeScaleGate",
+            "method": "pair_gate",
+            "message": f"HP fixed reference query failed: {type(exc).__name__}: {exc}",
+            "severity": "error",
+            "values": {
+                "side": "HP", "fluid": hp,
+                "pressure_Pa": reference_pressure,
+                "temperature_K": reference_temperature_k,
+                "location": "CBEvaluator.params.p_ref/T_ref",
+            },
+        })
     checks = [
         ("HP_CONDENSER", hp, wp["T_st_ht_max"] - opt["dT_hp_cd_pp"], 0.0),
         ("HP_EVAPORATOR", hp, wp["T_hs"] - opt["dT_hp_ev_pp"], 1.0),
@@ -223,9 +266,12 @@ def pair_gate(config: dict[str, Any], wp_key: str, hp: str, he: str) -> dict[str
                     "severity": "error",
                     "values": {"side": side, "pressure_ratio": ratio},
                 })
+    error_issues = [
+        issue for issue in issues if issue.get("severity", "error") == "error"
+    ]
     return {
-        "passed": not issues,
-        "primary_code": issues[0]["code"] if issues else None,
+        "passed": not error_issues,
+        "primary_code": error_issues[0]["code"] if error_issues else None,
         "n_issues": len(issues),
         "issues": issues,
         "estimated_pressures_Pa": pressures,
@@ -316,21 +362,37 @@ def expand_tasks(args, config: dict[str, Any], batch_dir: Path) -> list[dict[str
     return tasks
 
 
-def stage_for_code(code: str | None) -> str:
+def stage_for_code(code: str | None, component: str | None = None,
+                   method: str | None = None, message: str | None = None) -> str:
     if not code:
         return "UNKNOWN_WRAPPER"
+    component = str(component or "").upper()
+    method_text = str(method or "").lower()
+    message_text = str(message or "").lower()
     if code.startswith(("OPT_PRECHECK", "FLUID_FILTER")):
         return "OPT_PRECHECK"
-    if code.startswith(("KPI_", "EFFICIENCY_", "STATE_", "PHASE_", "PRESSURE_")):
+    if code.startswith("COOLPROP_") or code == "UPSTREAM_NONFINITE_STATE":
+        return "PROPERTY_INPUT_BUILD"
+    if code.startswith(("KPI_", "EFFICIENCY_")):
         return "KPI_SANITY"
     if "RECUPERATOR" in code:
-        return "HE_RECUPERATOR_SOLVE"
-    if "HP_" in code or code.startswith("HX_PINCH_HP"):
+        return "HP_RECUPERATOR_SOLVE" if component == "HP" else "HE_RECUPERATOR_SOLVE"
+    if code.startswith("SOLVER_"):
+        if component == "HP":
+            return "HP_CONSISTENCY" if "consistency" in method_text else "HP_PRESSURE_SOLVE"
+        if component == "HE":
+            return "HE_CONSISTENCY" if "consistency" in method_text else "HE_PRESSURE_SOLVE"
+        if any(name in message_text for name in ("sborc", "srorc", "tborc", "trorc")):
+            return "HE_PRESSURE_SOLVE"
+        if any(name in message_text for name in ("sbvchp", "srvchp", "tbvchp", "trvchp")):
+            return "HP_PRESSURE_SOLVE"
+        return "SOLVER_EXECUTION"
+    if component == "HP" or "HP_" in code or code.startswith("HX_PINCH_HP"):
         return "HP_CONSISTENCY"
-    if "HE_" in code or code.startswith("HX_PINCH_HE"):
+    if component == "HE" or "HE_" in code or code.startswith("HX_PINCH_HE"):
         return "HE_CONSISTENCY"
-    if "SOLVER" in code:
-        return "UNKNOWN_WRAPPER"
+    if code.startswith(("STATE_", "PHASE_", "PRESSURE_")):
+        return "CB_COUPLING_CONSISTENCY"
     return "CB_COUPLING_CONSISTENCY"
 
 
@@ -382,7 +444,10 @@ def write_failures(task: dict[str, Any], evaluator, config: dict[str, Any],
         for issue_index, issue in enumerate(issues, 1):
             issue_id = f"{evaluation_id}_issue_{issue_index:03d}"
             normalized = {
-                "issue_id": issue_id, "stage_code": stage_for_code(issue.get("code")),
+                "issue_id": issue_id, "stage_code": stage_for_code(
+                    issue.get("code"), issue.get("component"),
+                    issue.get("method"), issue.get("message")
+                ),
                 "code": issue.get("code", "UNKNOWN_EXCEPTION"),
                 "severity": issue.get("severity", "error"),
                 "component": issue.get("component", "unknown"),
@@ -401,24 +466,32 @@ def write_failures(task: dict[str, Any], evaluator, config: dict[str, Any],
                 "message": normalized["message"],
             })
             if normalized["code"].startswith("SOLVER_"):
+                is_least_squares = (
+                    "least_squares" in normalized["message"]
+                    or "x0" in normalized["message"]
+                )
+                residual = normalized["values"].get(
+                    "residual_linf", normalized["values"].get("residual")
+                )
                 attempt = {
                     "attempt_index": len(solver_attempts) + 1,
                     "component": normalized["component"],
                     "method": normalized["method"],
                     "solver_name": (
-                        "least_squares"
-                        if "least_squares" in normalized["message"]
-                        or "x0" in normalized["message"] else "unknown"
+                        "least_squares" if is_least_squares
+                        else "post_solve_consistency"
                     ),
-                    "is_fallback": True,
-                    "fallback_from": "fsolve",
+                    "is_fallback": is_least_squares,
+                    "fallback_from": "fsolve" if is_least_squares else None,
                     "x0": normalized["values"].get("x0"),
                     "bounds": normalized["values"].get("bounds"),
                     "solver_options": {},
                     "x_final": normalized["values"].get("x_final"),
-                    "residual_vector": normalized["values"].get("residual_vector"),
+                    "residual_vector": normalized["values"].get(
+                        "residual_vector", [residual] if residual is not None else None
+                    ),
                     "residual_l2": normalized["values"].get("residual_l2"),
-                    "residual_linf": normalized["values"].get("residual_linf"),
+                    "residual_linf": residual,
                     "residual_tol": normalized["values"].get("residual_tol"),
                     "success": False,
                     "status": None, "ier": None,
@@ -435,6 +508,11 @@ def write_failures(task: dict[str, Any], evaluator, config: dict[str, Any],
                     "success": attempt["success"],
                     "message": attempt["message"],
                 })
+        primary_issue = next(
+            (issue for issue in normalized_issues if issue["code"] == primary),
+            normalized_issues[0],
+        )
+        deepest_stage = primary_issue["stage_code"]
         record = {
             "schema_version": "0.1", "evaluation_id": evaluation_id,
             "parent_evaluation_id": None,
@@ -461,9 +539,10 @@ def write_failures(task: dict[str, Any], evaluator, config: dict[str, Any],
             "raw_x": x, "fixed_parameters": config["optimization"],
             "outcome": {
                 "feasible": False, "penalized": True, "penalty_value": -1e6,
+                "constraint_violation": float(info.get("constraint_violation", 10.0)),
                 "primary_code": primary,
                 "secondary_codes": [issue["code"] for issue in normalized_issues[1:]],
-                "deepest_stage": stage_for_code(primary), "stage_path": None, "kpis": {},
+                "deepest_stage": deepest_stage, "stage_path": None, "kpis": {},
             },
             "issues": normalized_issues, "solver_attempts": solver_attempts,
             "states": {}, "timings": {},
@@ -495,11 +574,13 @@ def write_failures(task: dict[str, Any], evaluator, config: dict[str, Any],
         atomic_json(run_dir / relative, record)
         failed_rows.append({
             "evaluation_id": evaluation_id, "primary_code": primary,
-            "deepest_stage": stage_for_code(primary),
+            "deepest_stage": deepest_stage,
+            "constraint_violation": float(info.get("constraint_violation", 10.0)),
             **{name: value for name, value in zip(VARIABLE_NAMES, x)},
             "record_path": str(relative),
         })
-    failed_fields = ["evaluation_id", "primary_code", "deepest_stage", *VARIABLE_NAMES, "record_path"]
+    failed_fields = ["evaluation_id", "primary_code", "deepest_stage",
+                     "constraint_violation", *VARIABLE_NAMES, "record_path"]
     issue_fields = ["evaluation_id", "issue_id", "stage_code", "code", "severity",
                     "component", "class", "method", "message"]
     atomic_csv(run_dir / "failures" / "failed_evaluations.csv", failed_rows, failed_fields)
@@ -566,6 +647,13 @@ def run_worker(task_path: Path) -> int:
     manifest = {
         "schema_version": "1.0", **task, "status": "RUNNING",
         "git_commit": commit, "git_dirty": dirty, "hostname": socket.gethostname(),
+        "cli_argv": list(sys.argv), "cwd": str(ROOT),
+        "python_version": platform.python_version(),
+        "numpy_version": __import__("numpy").__version__,
+        "scipy_version": __import__("scipy").__version__,
+        "coolprop_version": __import__("CoolProp").__version__,
+        "deap_version": __import__("deap").__version__,
+        "platform": platform.platform(),
         "start_time_utc": utc_now(), "end_time_utc": None, "exit_code": None,
     }
     atomic_json(run_dir / "metadata" / "manifest.json", manifest)
@@ -723,7 +811,8 @@ def run_worker(task_path: Path) -> int:
             output_dir / "generation_metrics.csv",
             generation_metrics,
             ["generation", "n_evaluated", "n_feasible", "population_size",
-             "front_size", "archive_size", "unique_ratio", "elapsed_s"],
+             "front_size", "archive_size", "unique_ratio",
+             "min_constraint_violation", "elapsed_s"],
         )
         failure_count = write_failures(task, evaluator, config, commit, dirty)
         import resource
@@ -843,6 +932,22 @@ def run_scheduler(tasks: list[dict[str, Any]], workers: int,
                 "fluid_hp": task["fluid_hp"], "fluid_he": task["fluid_he"],
                 "seed": task["seed"],
             })
+            manifest_path = Path(task["run_dir"]) / "metadata" / "manifest.json"
+            if manifest_path.exists():
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                results[-1].update({
+                    "terminal_status": manifest.get("status"),
+                    "git_commit": manifest.get("git_commit"),
+                    "git_dirty": manifest.get("git_dirty"),
+                    "config_sha256": manifest.get("config_sha256"),
+                    "start_time_utc": manifest.get("start_time_utc"),
+                    "end_time_utc": manifest.get("end_time_utc"),
+                    "evaluation_count": manifest.get("evaluation_count"),
+                    "feasible_count": manifest.get("feasible_count"),
+                    "failure_count": manifest.get("failure_count"),
+                    "pareto_size": manifest.get("pareto_size"),
+                    "manifest_path": str(manifest_path),
+                })
             del running[pid]
     return results
 
@@ -970,7 +1075,10 @@ def main() -> int:
         finalize_s1_batch(batch_dir, results)
     atomic_csv(batch_dir / "run_registry.csv", results, [
         "run_id", "stage", "wp", "cfg", "fluid_hp", "fluid_he", "seed",
-        "scheduler_status", "exit_code", "elapsed_s", "run_dir", "detail",
+        "scheduler_status", "terminal_status", "exit_code", "elapsed_s",
+        "git_commit", "git_dirty", "config_sha256", "start_time_utc",
+        "end_time_utc", "evaluation_count", "feasible_count", "failure_count",
+        "pareto_size", "run_dir", "manifest_path", "detail",
     ])
     accepted = all(row["scheduler_status"] == "FINISHED" for row in results)
     batch_manifest.update({

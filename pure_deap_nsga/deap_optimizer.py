@@ -29,6 +29,8 @@ import time
 import logging
 import warnings
 import math
+import ast
+import re
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -266,6 +268,10 @@ class CBEvaluator:
 
         self.T_hp_cs = wp['T_hs']   # °C
         self.T_he_cs = wp['T_cs']   # °C
+        try:
+            self.Ttriple_he_K = float(CP.PropsSI('Ttriple', self.fluid_he))
+        except Exception:
+            self.Ttriple_he_K = None
 
         # ── Diagnostics (non-intrusive) ──────────────────────────────────
         self.diagnostics_enabled = cfg.get('diagnostics_enabled', False)
@@ -385,6 +391,8 @@ class CBEvaluator:
     @staticmethod
     def _property_failure_code(message: str) -> Optional[str]:
         text = str(message).lower()
+        if 'solver_pressure_interval_degenerate' in text:
+            return 'SOLVER_PRESSURE_INTERVAL_DEGENERATE'
         if 'solver_initial_guess_out_of_bounds' in text \
         or ('x0' in text and 'infeasible' in text):
             return 'SOLVER_INITIAL_GUESS_OUT_OF_BOUNDS'
@@ -420,6 +428,30 @@ class CBEvaluator:
             if code and issue.get('code') in wrapper_codes:
                 values = dict(issue.get('values') or {})
                 values['wrapped_code'] = issue.get('code')
+                if code in {
+                    'SOLVER_PRESSURE_INTERVAL_DEGENERATE',
+                    'SOLVER_INITIAL_GUESS_OUT_OF_BOUNDS',
+                }:
+                    message = str(issue.get('message', ''))
+                    extracted = {}
+                    for label in ('x0', 'lower', 'upper', 'width'):
+                        match = re.search(rf'{label}=(\[[^\]]*\])', message)
+                        if match:
+                            try:
+                                extracted[label] = list(ast.literal_eval(match.group(1)))
+                            except (SyntaxError, ValueError, TypeError):
+                                pass
+                    if 'x0' in extracted:
+                        values['x0'] = extracted['x0']
+                    if 'lower' in extracted and 'upper' in extracted:
+                        values['bounds'] = {
+                            'lower': extracted['lower'],
+                            'upper': extracted['upper'],
+                        }
+                    if 'width' in extracted:
+                        values['interval_width'] = extracted['width']
+                if code == 'SOLVER_PRESSURE_INTERVAL_DEGENERATE':
+                    values['interval_degenerate'] = True
                 issue.update({
                     'code': code,
                     'component': (
@@ -442,6 +474,82 @@ class CBEvaluator:
             and issue.get('code') not in wrappers:
                 return issue.get('code')
         return fallback
+
+    @staticmethod
+    def _issue_constraint_violation(issue: Dict) -> float:
+        """Return a finite, dimensionless proximity measure for one failed check.
+
+        This value is used only to guide an all-infeasible population toward a
+        boundary.  It never turns an infeasible evaluation into a feasible one
+        and does not relax any thermodynamic constraint.
+        """
+        code = str(issue.get('code') or 'UNKNOWN_EXCEPTION')
+        values = issue.get('values') or {}
+        numeric = [
+            abs(float(value)) for value in values.values()
+            if isinstance(value, (int, float, np.integer, np.floating))
+            and np.isfinite(value)
+        ]
+        if code == 'OPT_PRECHECK_STORAGE_TEMP_TOO_LOW':
+            gap = float(values.get('threshold', 0.0)) - float(values.get('T_st_ht', 0.0))
+            return 1.0 + max(0.0, gap) / 10.0
+        if code == 'OPT_PRECHECK_HE_REFERENCE_BELOW_TRIPLE':
+            gap = float(values.get('threshold_K', 0.0)) - float(values.get('T_ref_K', 0.0))
+            return 1.0 + max(0.0, gap) / 10.0
+        if code == 'KPI_SANITY_ETA_P2P_RANGE':
+            eta = float(values.get('eta_cb_elec', 0.0))
+            return 1.0 + max(0.01 - eta, eta - 1.0, 0.0)
+        if code == 'PHASE_WET_EXPANSION':
+            quality = float(values.get('quality', 0.5))
+            return 1.0 + max(0.0, min(quality, 1.0 - quality))
+        if code.startswith('SOLVER_'):
+            residual = values.get('residual_linf', values.get('residual'))
+            tolerance = values.get('residual_tol')
+            if isinstance(residual, (int, float)) and np.isfinite(residual):
+                ratio = abs(float(residual))
+                if isinstance(tolerance, (int, float)) and tolerance > 0:
+                    ratio /= float(tolerance)
+                return 1.0 + math.log1p(min(ratio, 1.0e12))
+            return 20.0
+        if code.startswith('COOLPROP_') or code == 'UPSTREAM_NONFINITE_STATE':
+            return 100.0
+        if code.startswith('STATE_') or 'RECUPERATOR' in code:
+            if len(numeric) >= 2:
+                spread = max(numeric) - min(numeric)
+                scale = max(max(numeric), 1.0)
+                return 1.0 + spread / scale
+            return 2.0
+        if code.startswith('HX_PINCH_'):
+            # Existing checks short-circuit at the first pinch violation.  Use
+            # the reported target to distinguish near-boundary and severe
+            # failures until all model checks expose an explicit signed margin.
+            target = abs(float(values.get('min_pinch', 1.0)))
+            temperatures = [
+                abs(float(value)) for key, value in values.items()
+                if key.startswith('T_') and isinstance(value, (int, float))
+                and np.isfinite(value)
+            ]
+            spread = max(temperatures) - min(temperatures) if len(temperatures) >= 2 else 0.0
+            return 1.0 + min(abs(spread - target) / max(target, 1.0), 20.0)
+        return 10.0
+
+    def _constraint_violation(self, info: Dict) -> float:
+        wrappers = {
+            'EVALUATE_CYCLE_EXCEPTION', 'UNKNOWN_EXCEPTION',
+            'CB_SOLVER_ERROR', 'CB_CHILD_HP_ERROR', 'CB_CHILD_HE_ERROR',
+        }
+        issues = [
+            issue for issue in info.get('issues', [])
+            if issue.get('severity', 'error') == 'error'
+            and issue.get('code') not in wrappers
+        ]
+        primary = info.get('primary_code')
+        primary_issues = [issue for issue in issues if issue.get('code') == primary]
+        selected = primary_issues or issues[:1]
+        if not selected:
+            return 10.0
+        value = sum(self._issue_constraint_violation(issue) for issue in selected)
+        return float(value) if np.isfinite(value) and value > 0 else 10.0
 
     def evaluate(self, x: List[float]) -> Tuple[float, ...]:
         """
@@ -471,6 +579,29 @@ class CBEvaluator:
                     'message': f'T_st_ht={T_st_ht} <= T_hp_cs+5={self.T_hp_cs+5.0}',
                     'severity': 'error',
                     'values': {'T_st_ht': T_st_ht, 'threshold': self.T_hp_cs + 5.0},
+                }]
+            self._record_eval(base_info)
+            return tuple(INFEASIBLE_PENALTY for _ in self.objectives)
+
+        # The HE exergy reference is the low-temperature storage state.  Unlike
+        # the HP reference this depends on the design vector, so guard it here
+        # and expose a continuous distance instead of letting CoolProp fail.
+        T_st_lt_K = x[0] - x[1] + 273.15
+        if self.Ttriple_he_K is not None \
+        and T_st_lt_K <= self.Ttriple_he_K + 1.0:
+            base_info['primary_code'] = 'OPT_PRECHECK_HE_REFERENCE_BELOW_TRIPLE'
+            if diag_on:
+                base_info['issues'] = [{
+                    'code': 'OPT_PRECHECK_HE_REFERENCE_BELOW_TRIPLE',
+                    'component': 'optimizer', 'cls': 'CBEvaluator',
+                    'method': 'evaluate',
+                    'message': 'HE storage reference is below/too close to Ttriple',
+                    'severity': 'error',
+                    'values': {
+                        'T_ref_K': T_st_lt_K,
+                        'Ttriple_K': self.Ttriple_he_K,
+                        'threshold_K': self.Ttriple_he_K + 1.0,
+                    },
                 }]
             self._record_eval(base_info)
             return tuple(INFEASIBLE_PENALTY for _ in self.objectives)
@@ -609,9 +740,13 @@ class CBEvaluator:
 
     def _record_eval(self, info: Dict):
         """Record evaluation info if diagnostics enabled."""
+        info = dict(info)
+        info['constraint_violation'] = (
+            0.0 if info.get('feasible') else self._constraint_violation(info)
+        )
         self.last_eval_info = info
         if self.diagnostics_enabled:
-            self.diagnostics_records.append(dict(info))
+            self.diagnostics_records.append(info)
 
 
 # ============================================================================
@@ -736,6 +871,22 @@ class NSGAOptimizer:
             and all(value > INFEASIBLE_PENALTY / 2 for value in values)
         )
 
+    def _evaluate_invalid(self, individuals) -> None:
+        """Evaluate individuals and retain a gradient inside infeasible space."""
+        for individual in individuals:
+            raw_fitness = tuple(self.toolbox.evaluate(individual))
+            if self._fitness_is_feasible(raw_fitness):
+                individual.fitness.values = raw_fitness
+                continue
+            info = getattr(self.evaluator, 'last_eval_info', {}) or {}
+            violation = float(info.get('constraint_violation', 10.0))
+            if not np.isfinite(violation) or violation <= 0:
+                violation = 10.0
+            guided_penalty = INFEASIBLE_PENALTY - min(violation, 1.0e5)
+            individual.fitness.values = tuple(
+                guided_penalty for _ in range(self.n_obj)
+            )
+
     def _archive_similar(self, left, right) -> bool:
         return bool(np.allclose(
             np.asarray(left, dtype=float),
@@ -778,6 +929,7 @@ class NSGAOptimizer:
                 'eta_mutation': self.eta_mut,
                 'archive_tolerance': self.archive_tol,
                 'seed': self.seed,
+                'constraint_handling': 'normalized_penalty_v1',
             },
             'generation': generation,
             'population': [
@@ -863,9 +1015,7 @@ class NSGAOptimizer:
         logbook.header = ['gen', 'n_feasible'] + [f'max_obj{i}' for i in range(self.n_obj)]
 
         if resume_state is None:
-            fitnesses = list(map(self.toolbox.evaluate, pop))
-            for ind, fit in zip(pop, fitnesses):
-                ind.fitness.values = fit
+            self._evaluate_invalid(pop)
             archive.update(ind for ind in pop if self._fitness_is_feasible(ind.fitness.values))
 
         # Apply selection once to assign crowding distance. A checkpoint stores
@@ -893,9 +1043,7 @@ class NSGAOptimizer:
 
             # Evaluate invalid individuals
             invalid = [ind for ind in offspring if not ind.fitness.valid]
-            fitnesses = list(map(self.toolbox.evaluate, invalid))
-            for ind, fit in zip(invalid, fitnesses):
-                ind.fitness.values = fit
+            self._evaluate_invalid(invalid)
 
             # Combine and select next generation
             combined = pop + offspring
@@ -913,6 +1061,11 @@ class NSGAOptimizer:
             unique_population = {
                 tuple(np.round(np.asarray(ind, dtype=float), 12)) for ind in pop
             }
+            infeasible_violations = [
+                max(0.0, INFEASIBLE_PENALTY - float(ind.fitness.values[0]))
+                for ind in pop
+                if not self._fitness_is_feasible(ind.fitness.values)
+            ]
             metric = {
                 'generation': gen,
                 'n_evaluated': len(invalid),
@@ -923,6 +1076,9 @@ class NSGAOptimizer:
                 )[0]),
                 'archive_size': len(archive),
                 'unique_ratio': len(unique_population) / len(pop) if pop else 0.0,
+                'min_constraint_violation': (
+                    min(infeasible_violations) if infeasible_violations else 0.0
+                ),
                 'elapsed_s': time.time() - t0,
             }
             self.generation_metrics.append(metric)

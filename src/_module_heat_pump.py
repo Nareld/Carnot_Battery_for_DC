@@ -190,7 +190,7 @@ class SBVCHP(DiagnosticMixin):
                     self.check_consistency()
                 except Exception as exc:
                     self._add_issue('EVALUATE_CYCLE_EXCEPTION', 'HP', 'evaluate',
-                                  f'{type(exc).__name__}: {str(exc)[:200]}',
+                                  f'{type(exc).__name__}: {str(exc)[:1000]}',
                                   exception_type=type(exc).__name__)
                     self.error = True
 
@@ -623,7 +623,7 @@ class SBVCHP(DiagnosticMixin):
             return
         if f(abs(self.resi) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HP',
              'check_consistency', f'mass/energy residual too large',
-             residual=abs(self.resi)):
+             residual=abs(self.resi), residual_tol=1.0):
             return
         if f(self.p_hp_2x < self.p_hp_2x_min, 'PRESSURE_BOUND_LOW', 'HP',
              'check_consistency', 'condenser pressure below minimum',
@@ -1284,7 +1284,7 @@ class SRVCHP(SBVCHP):
             return
         if f(abs(self.resi) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HP',
              'check_consistency', f'mass/energy residual too large',
-             residual=abs(self.resi)):
+             residual=abs(self.resi), residual_tol=1.0):
             return
         if f(self.p_hp_2x < self.p_hp_2x_min, 'PRESSURE_BOUND_LOW', 'HP',
              'check_consistency', 'condenser pressure below minimum',
@@ -1951,7 +1951,7 @@ class TBVCHP(SBVCHP):
             return
         if f(abs(self.resi) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HP',
              'check_consistency', f'mass/energy residual too large',
-             residual=abs(self.resi)):
+             residual=abs(self.resi), residual_tol=1.0):
             return
         if f(self.p_hp_2 < self.p_hp_2_min, 'PRESSURE_BOUND_LOW', 'HP',
              'check_consistency', 'pressure below minimum',
@@ -2568,7 +2568,7 @@ class TRVCHP(TBVCHP):
             return
         if f(abs(self.resi) > 1, 'SOLVER_RESIDUAL_TOO_HIGH', 'HP',
              'check_consistency', f'mass/energy residual too large',
-             residual=abs(self.resi)):
+             residual=abs(self.resi), residual_tol=1.0):
             return
         if f(self.p_hp_2 < self.p_hp_2_min, 'PRESSURE_BOUND_LOW', 'HP',
              'check_consistency', 'pressure below minimum',
