@@ -94,7 +94,7 @@ P0/P1 可先用：
 | S0 单点烟测 | 每工质×侧×6 WP，中位设计变量，SB/SR 各至少 1 构型 | 异常全记录，不直接判物理不可行 | 低 |
 | S1 可行域筛查 | DC-B/D/F×SB-SB/SR-SR，每对 scrambled Sobol/LHS 256 点 | 按可行率+失败码分层；0/256 只表示可行率 95% 上限约 1.17% | 144 对约 221k evaluations，约 2.9 h 串行 |
 | S2 粗优化 | 每 WP 前 30–40 对，6 WP×4 构型，pop=48、gen=50、seed=42 | 可行率+目标覆盖+HV 贡献 | 40 对约 2.12M evaluations，约 28 h 串行 |
-| S3 复筛 | 按 WP 池化前沿 | 每 WP 前 5 对；同时覆盖效率/密度/火用极值 | 后处理 |
+| S3 复筛 | 按 WP×已验收构型池化认证前沿 | 每单元前 5 对；同时覆盖效率/密度/火用极值 | 后处理 |
 | S4 确认优化 | 6 WP×4 构型×5 对×5 seeds，pop=100、gen=150 | 通过多 seed 收敛门 | 约 8.16M evaluations，约 108 h 串行 |
 | S5 独立复算 | 每 WP 效率/密度/折中 3 代表点 | 原求解器复算+能量/火用/相态守门 | 低 |
 
@@ -118,6 +118,24 @@ I/O、不均衡和性质调用竞争，墙钟预留 22–28 h。并行前先做 
 - 最终推荐工质对/构型应在至少 4/5 seeds 进入前列。
 
 常规 S2 未过门时延长到 300 代或扩大种群，不得只选择表现最好的 seed。
+
+S3 必须以冻结的 S2 `accepted_run_registry.csv` 为唯一输入，不得重新拼接 base 与
+extension 批次。当前正式工具的选择顺序为：先以最少候选覆盖三个目标极值，再按候选
+完整认证前沿对已选集合的 exact normalized-HV 增量补齐到 5 对；HV 并列按配置中冻结
+的容差和稳定键裁决。示例：
+
+```bash
+.venv/bin/python \
+  pure_deap_nsga/experiments/large_fluid_pairs/select_s3_candidates.py \
+  --accepted-registry /path/to/ACCEPTED_S2/accepted_run_registry.csv \
+  --config pure_deap_nsga/experiments/large_fluid_pairs/optimization_config_large_pairs.json \
+  --output-dir /path/to/S3_FORMAL/S3_<UTC> \
+  --top-k 5
+```
+
+正式 S3 要求 Git 工作树干净。输出中的 `s4_task_list.csv` 将每个入选候选展开为五个
+独立 seed；S2 的 seed 42 只作为来源证据，不能替代 S4 的 seed 42 确认任务。未在 S2
+出现的构型只记录为 `unobserved`，不得由其他构型结果推断排名。
 达到 300 代仍未满足 HV 门的少量任务使用 `S2_exception_extension`，保持 pop、seed、
 HV 窗口和阈值不变，从新种群运行并允许最多 450 代；不得跨最大代数配置复用旧检查点。
 

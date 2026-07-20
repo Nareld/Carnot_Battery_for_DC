@@ -127,6 +127,25 @@
         "resume_from_previous_checkpoint": false,
         "scope": "only S2 tasks that reached 300 generations without hypervolume convergence"
       },
+      "S3_selection": {
+        "input_contract": "canonical accepted S2 registry only",
+        "selection_unit": "working_point_x_observed_configuration",
+        "pairs_per_unit": 5,
+        "algorithm": "s3_exact_hv_extreme_coverage_v1",
+        "mandatory_coverage": [
+          "eta_p2p_max", "energy_density_thermal_max", "exergy_efficiency_max"
+        ],
+        "fill_rule": "greedy exact normalized-hypervolume gain",
+        "hypervolume_tie_relative_tolerance": 1e-12,
+        "hypervolume_tie_absolute_tolerance": 1e-14,
+        "tie_break": [
+          "pooled_front_point_count_desc",
+          "candidate_normalized_hypervolume_desc",
+          "candidate_key_asc"
+        ],
+        "require_input_order_invariance": true,
+        "emit_s4_task_list": true
+      },
       "S4_confirmation": {
         "population_size": 100,
         "generations": 150,
