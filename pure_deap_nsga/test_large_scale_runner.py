@@ -126,6 +126,36 @@ def test_reference_gate_and_stage_mapping():
     assert stage_for_code(
         "COOLPROP_PROPERTY_INPUT_OUT_OF_RANGE", "property", "evaluate", ""
     ) == "PROPERTY_INPUT_BUILD"
+    saturation_message = (
+        'Saturation pressure [250000 Pa] corresponding to T [400.561 K] '
+        'is within 1e-4 % of given p [250000 Pa]'
+    )
+    assert CBEvaluator._property_failure_code(saturation_message) == (
+        "COOLPROP_SATURATION_BOUNDARY_AMBIGUITY"
+    )
+    evaluator = object.__new__(CBEvaluator)
+    normalized = evaluator._normalize_issues([{
+        "code": "EVALUATE_CYCLE_EXCEPTION",
+        "component": "CB",
+        "severity": "error",
+        "message": saturation_message,
+    }])
+    assert normalized[0]["code"] == (
+        "COOLPROP_SATURATION_BOUNDARY_AMBIGUITY"
+    )
+    assert normalized[0]["values"]["wrapped_code"] == (
+        "EVALUATE_CYCLE_EXCEPTION"
+    )
+    assert evaluator._primary_from_issues(
+        normalized, "EVALUATE_CYCLE_EXCEPTION"
+    ) == "COOLPROP_SATURATION_BOUNDARY_AMBIGUITY"
+    assert stage_for_code(
+        "COOLPROP_SATURATION_BOUNDARY_AMBIGUITY",
+        "property", "evaluate", saturation_message,
+    ) == "PROPERTY_INPUT_BUILD"
+    extension = config["experiment"]["profiles"]["S2_exception_extension"]
+    assert extension["maximum_generations"] == 450
+    assert extension["resume_from_previous_checkpoint"] is False
     try:
         _bounded_least_squares(
             lambda x: x, [1.0], [1.0], [1.0], "test.degenerate"

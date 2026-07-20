@@ -402,6 +402,9 @@ class CBEvaluator:
             return 'SOLVER_INITIAL_GUESS_OUT_OF_BOUNDS'
         if 'p,t with ttse cannot be two-phase' in text:
             return 'COOLPROP_BACKEND_TWOPHASE_UNSUPPORTED'
+        if 'saturation pressure' in text \
+        and 'is within 1e-4 % of given p' in text:
+            return 'COOLPROP_SATURATION_BOUNDARY_AMBIGUITY'
         if 'coolprop_property_nonfinite' in text:
             return 'COOLPROP_PROPERTY_NONFINITE'
         property_markers = (

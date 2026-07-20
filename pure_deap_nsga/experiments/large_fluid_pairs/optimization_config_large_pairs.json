@@ -116,6 +116,17 @@
         "hv_relative_tolerance": 0.005,
         "seeds": [42]
       },
+      "S2_exception_extension": {
+        "population_size": 48,
+        "minimum_generations": 150,
+        "maximum_generations": 450,
+        "hv_window_generations": 20,
+        "hv_relative_tolerance": 0.005,
+        "hv_consecutive_generations": 5,
+        "seeds": [42],
+        "resume_from_previous_checkpoint": false,
+        "scope": "only S2 tasks that reached 300 generations without hypervolume convergence"
+      },
       "S4_confirmation": {
         "population_size": 100,
         "generations": 150,
