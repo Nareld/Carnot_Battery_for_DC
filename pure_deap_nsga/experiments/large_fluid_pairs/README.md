@@ -163,6 +163,42 @@ S4 若有任务在冻结的 150 代达到上限但未满足 HV 连续窗口门�
 达到 300 代仍未满足 HV 门的少量任务使用 `S2_exception_extension`，保持 pop、seed、
 HV 窗口和阈值不变，从新种群运行并允许最多 450 代；不得跨最大代数配置复用旧检查点。
 
+### S4 canonical 验收与 S5 入口
+
+S4 base 与 extension 不能直接拼接。`accept_s4_results.py` 以 S3 的 300 个任务键为全集，
+保留已收敛 base run，并用 extension run 替换对应未收敛源 run。工具验证 manifest、
+checkpoint、两次前沿复算、Pareto 和配置哈希，然后按固定边界重新计算 exact HV、样本
+CV 和 exact IGD+。`S4_RECOMMENDABLE` 定义为三个稳定性门全部通过，并在同一 WP×seed
+的 10 个候选中至少 4/5 次位于 top-3（边界并列全部保留）。正式执行要求 clean Git：
+
+```bash
+.venv/bin/python \
+  pure_deap_nsga/experiments/large_fluid_pairs/accept_s4_results.py \
+  --base-batch /path/to/S4_FORMAL/BATCH_S4_<UTC> \
+  --extension-batch /path/to/S4_EXTENSION/BATCH_S4_<UTC> \
+  --s3-task-list /path/to/S3_FORMAL/S3_<UTC>/s4_task_list.csv \
+  --config pure_deap_nsga/experiments/large_fluid_pairs/optimization_config_large_pairs.json \
+  --output-dir /path/to/S4_ACCEPTED/ACCEPTED_S4_<UTC>
+```
+
+S5 必须读取上述 acceptance，不能手工输入或静默换点。每个 WP 的效率、密度、折中点
+都来自已有认证 Pareto 行；工具验证来源行、点哈希和完整 lineage。每点每次在新进程中
+直接构造原始 CBSim 类，不读取优化器 cache，并保存能量闭合、火用状态恒等式及损失、
+严格 pinch、状态/相态、HE 膨胀路径、压力、求解残差和 KPI 对照证据。正式批次固定至少
+两次独立复算：
+
+```bash
+.venv/bin/python \
+  pure_deap_nsga/experiments/large_fluid_pairs/run_s5_revalidation.py \
+  --accepted-dir /path/to/S4_ACCEPTED/ACCEPTED_S4_<UTC> \
+  --config pure_deap_nsga/experiments/large_fluid_pairs/optimization_config_large_pairs.json \
+  --output-dir /path/to/S5_FORMAL/S5_<UTC> \
+  --repeats 2 --timeout-s 120
+```
+
+`--allow-dirty --smoke-limit N` 只用于开发验证，manifest 状态为 `SMOKE_PASS`，不能作为
+正式 S5 放行证据。
+
 ## 6. 数据契约
 
 - `fluid_catalog.csv`：规范名、CoolProp 版本、Tc/Pc/Ttriple、GWP 来源、安全类、ODP、稳定性和法规。
