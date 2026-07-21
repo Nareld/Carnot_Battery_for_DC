@@ -10,7 +10,8 @@ import pandas as pd
 
 from deap_optimizer import CBEvaluator, INFEASIBLE_PENALTY, NSGAOptimizer
 from experiments.large_fluid_pairs.run_large_scale import (
-    nondominated_mask, pair_gate, revalidate_archive, stage_for_code,
+    nondominated_mask, pair_gate, read_exact_tasks, revalidate_archive,
+    stage_for_code,
 )
 from experiments.large_fluid_pairs.select_s2_candidates import summarize_pairs
 from _module_heat_engine import _bounded_least_squares
@@ -279,12 +280,88 @@ def normalized(front):
     )
 
 
+def test_exact_task_lineage_and_extended_resume():
+    with tempfile.TemporaryDirectory() as temporary:
+        task_list = Path(temporary) / "tasks.csv"
+        task_list.write_text(
+            "wp,cfg,fluid_hp,fluid_he,seed,resume_from,source_s2_run_id,"
+            "source_s4_run_id,supersedes_run_id,s3_selection_rank,"
+            "s3_selected_reason,requires_s5_review\n"
+            "DC-A,SBVCHP_SBORC,R245fa,R227EA,42,/tmp/checkpoint.json,"
+            "s2-run,s4-run,s4-run,3,greedy_incremental_hypervolume,True\n",
+            encoding="utf-8",
+        )
+        rows = read_exact_tasks(task_list)
+    assert len(rows) == 1
+    assert rows[0]["source_s2_run_id"] == "s2-run"
+    assert rows[0]["source_s4_run_id"] == "s4-run"
+    assert rows[0]["s3_selection_rank"] == 3
+    assert rows[0]["requires_s5_review"] is True
+
+    checkpoint = {}
+    prefix = NSGAOptimizer(
+        SyntheticEvaluator(), pop_size=8, n_gen=1,
+        cx_prob=0.9, mut_prob=0.2, seed=29,
+    )
+    prefix.run(
+        verbose=False, checkpoint_every=1,
+        checkpoint_callback=lambda payload: checkpoint.update(payload),
+    )
+    extended = NSGAOptimizer(
+        SyntheticEvaluator(), pop_size=8, n_gen=3,
+        cx_prob=0.9, mut_prob=0.2, seed=29,
+    )
+    extended_front, _ = extended.run(verbose=False, resume_state=checkpoint)
+    full = NSGAOptimizer(
+        SyntheticEvaluator(), pop_size=8, n_gen=3,
+        cx_prob=0.9, mut_prob=0.2, seed=29,
+    )
+    full_front, _ = full.run(verbose=False)
+    assert normalized(extended_front) == normalized(full_front)
+    clean_extended = [
+        {key: value for key, value in row.items() if key != "elapsed_s"}
+        for row in extended.generation_metrics
+    ]
+    clean_full = [
+        {key: value for key, value in row.items() if key != "elapsed_s"}
+        for row in full.generation_metrics
+    ]
+    assert clean_extended == clean_full
+
+    try:
+        shorter = NSGAOptimizer(
+            SyntheticEvaluator(), pop_size=8, n_gen=1,
+            cx_prob=0.9, mut_prob=0.2, seed=29,
+        )
+        longer_checkpoint = dict(checkpoint)
+        longer_checkpoint["optimizer_signature"] = dict(
+            checkpoint["optimizer_signature"], maximum_generations=3
+        )
+        shorter.run(verbose=False, resume_state=longer_checkpoint)
+    except ValueError as exc:
+        assert "CHECKPOINT_MAXIMUM_GENERATIONS_CANNOT_DECREASE" in str(exc)
+    else:
+        raise AssertionError("resume horizon must never move backwards")
+
+    try:
+        incompatible = NSGAOptimizer(
+            SyntheticEvaluator(), pop_size=12, n_gen=3,
+            cx_prob=0.9, mut_prob=0.2, seed=29,
+        )
+        incompatible.run(verbose=False, resume_state=checkpoint)
+    except ValueError as exc:
+        assert "CHECKPOINT_OPTIMIZER_SIGNATURE_MISMATCH" in str(exc)
+    else:
+        raise AssertionError("resume must reject every non-horizon signature change")
+
+
 def main():
     test_constraint_guidance()
     test_reference_gate_and_stage_mapping()
     test_configuration_aware_summary()
     test_fixed_hypervolume_and_rescreening()
     test_isolated_front_revalidation()
+    test_exact_task_lineage_and_extended_resume()
     evaluator = SyntheticEvaluator()
     optimizer = NSGAOptimizer(
         evaluator, pop_size=101, n_gen=2, cx_prob=0.0, mut_prob=1.0, seed=7

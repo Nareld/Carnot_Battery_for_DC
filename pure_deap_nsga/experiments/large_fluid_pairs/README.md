@@ -136,6 +136,30 @@ extension 批次。当前正式工具的选择顺序为：先以最少候选覆�
 正式 S3 要求 Git 工作树干净。输出中的 `s4_task_list.csv` 将每个入选候选展开为五个
 独立 seed；S2 的 seed 42 只作为来源证据，不能替代 S4 的 seed 42 确认任务。未在 S2
 出现的构型只记录为 `unobserved`，不得由其他构型结果推断排名。
+
+S4 若有任务在冻结的 150 代达到上限但未满足 HV 连续窗口门，只允许选择这些任务做
+例外扩展。先由 `prepare_s4_extension.py` 验证源批次、S3 lineage、终态 checkpoint
+和全部哈希，再以同一配置、population、seed 和 archive tolerance 从 checkpoint 续算；
+除 `maximum_generations` 单调增加外，优化器签名的任何变化都会被拒绝。扩展必须使用
+新的 data root 和 run ID，不得覆盖正式 S4 原始目录。示例：
+
+```bash
+.venv/bin/python \
+  pure_deap_nsga/experiments/large_fluid_pairs/prepare_s4_extension.py \
+  --base-batch /path/to/BATCH_S4_<UTC> \
+  --s3-task-list /path/to/S3/s4_task_list.csv \
+  --config pure_deap_nsga/experiments/large_fluid_pairs/optimization_config_large_pairs.json \
+  --output-dir /path/to/S4_EXTENSION/inputs \
+  --target-maximum-generations 300
+
+.venv/bin/python \
+  pure_deap_nsga/experiments/large_fluid_pairs/run_large_scale.py \
+  --config pure_deap_nsga/experiments/large_fluid_pairs/optimization_config_large_pairs.json \
+  --data-root /path/to/S4_EXTENSION \
+  --stage S4 --mode optimize \
+  --task-list /path/to/S4_EXTENSION/inputs/s4_extension_task_list.csv \
+  --population-size 100 --generations 300 --workers 8 --checkpoint-every 10
+```
 达到 300 代仍未满足 HV 门的少量任务使用 `S2_exception_extension`，保持 pop、seed、
 HV 窗口和阈值不变，从新种群运行并允许最多 450 代；不得跨最大代数配置复用旧检查点。
 

@@ -142,16 +142,47 @@ def read_exact_tasks(path: Path) -> list[dict[str, Any]]:
             raise ValueError(f"task list must contain columns {sorted(required)}")
         rows = []
         seen = set()
+        optional_text = [
+            "resume_from", "source_s2_run_id", "source_s4_run_id",
+            "source_s4_run_dir", "supersedes_run_id", "s3_selected_reason",
+            "source_checkpoint_sha256", "source_s4_manifest_sha256",
+        ]
         for row in reader:
             item = {
                 "wp": row["wp"].strip(), "cfg": row["cfg"].strip(),
                 "fluid_hp": row["fluid_hp"].strip(),
                 "fluid_he": row["fluid_he"].strip(), "seed": int(row["seed"]),
             }
-            key = tuple(item.values())
+            for field in optional_text:
+                value = row.get(field, "").strip()
+                if value:
+                    item[field] = value
+            rank = row.get("s3_selection_rank", "").strip()
+            if rank:
+                item["s3_selection_rank"] = int(rank)
+            for field in [
+                "extension_target_maximum_generations", "source_evaluation_count",
+                "source_feasible_count", "source_failure_count",
+                "source_front_revalidation_solver_calls",
+            ]:
+                value = row.get(field, "").strip()
+                if value:
+                    item[field] = int(value)
+            review = row.get("requires_s5_review", "").strip().lower()
+            if review:
+                if review not in {"true", "false", "1", "0", "yes", "no"}:
+                    raise ValueError(
+                        "requires_s5_review must be a boolean when provided"
+                    )
+                item["requires_s5_review"] = review in {"true", "1", "yes"}
+            key = tuple(item[field] for field in [
+                "wp", "cfg", "fluid_hp", "fluid_he", "seed"
+            ])
             if key not in seen:
                 rows.append(item)
                 seen.add(key)
+            else:
+                raise ValueError(f"duplicate exact task key: {key}")
         return rows
 
 
@@ -321,13 +352,23 @@ def expand_tasks(args, config: dict[str, Any], batch_dir: Path) -> list[dict[str
     stamp = utc_stamp()
     filtered = []
     expansion = (
-        [(item["wp"], item["cfg"], item["fluid_hp"], item["fluid_he"], item["seed"])
-         for item in exact_tasks]
-        if exact_tasks else
-        [(wp, cfg, hp, he, seed)
-         for wp in wp_keys for hp, he in pairs for cfg in cfg_keys for seed in args.seed]
+        exact_tasks if exact_tasks else [
+            {"wp": wp, "cfg": cfg, "fluid_hp": hp, "fluid_he": he, "seed": seed}
+            for wp in wp_keys for hp, he in pairs for cfg in cfg_keys for seed in args.seed
+        ]
     )
-    for wp, cfg, hp, he, seed in expansion:
+    lineage_fields = [
+        "source_s2_run_id", "source_s4_run_id", "source_s4_run_dir",
+        "supersedes_run_id", "s3_selection_rank", "s3_selected_reason",
+        "requires_s5_review", "source_checkpoint_sha256",
+        "source_s4_manifest_sha256", "extension_target_maximum_generations",
+        "source_evaluation_count", "source_feasible_count", "source_failure_count",
+        "source_front_revalidation_solver_calls",
+    ]
+    used_resume_paths: set[str] = set()
+    for item in expansion:
+            wp, cfg = item["wp"], item["cfg"]
+            hp, he, seed = item["fluid_hp"], item["fluid_he"], item["seed"]
             gate = pair_gate(config, wp, hp, he)
             if not gate["passed"]:
                 filtered.append({
@@ -338,7 +379,52 @@ def expand_tasks(args, config: dict[str, Any], batch_dir: Path) -> list[dict[str
                 continue
             run_id = make_run_id(args.stage, wp, cfg, hp, he, seed, stamp)
             run_dir = batch_dir / "runs" / run_id
-            tasks.append({
+            item_resume = item.get("resume_from")
+            resume_from = item_resume or (
+                str(args.resume_from.resolve()) if args.resume_from else None
+            )
+            if resume_from:
+                resume_path = Path(resume_from).resolve()
+                if not resume_path.is_file():
+                    raise ValueError(f"resume checkpoint does not exist: {resume_path}")
+                resume_from = str(resume_path)
+                if resume_from in used_resume_paths:
+                    raise ValueError(f"duplicate resume checkpoint path: {resume_from}")
+                used_resume_paths.add(resume_from)
+                expected_checkpoint_hash = item.get("source_checkpoint_sha256")
+                if expected_checkpoint_hash and sha256(resume_path) != expected_checkpoint_hash:
+                    raise ValueError(
+                        f"resume checkpoint hash mismatch: {resume_path}"
+                    )
+                source_run_dir = item.get("source_s4_run_dir")
+                source_manifest_hash = item.get("source_s4_manifest_sha256")
+                if source_run_dir and source_manifest_hash:
+                    source_manifest_path = (
+                        Path(source_run_dir).resolve() / "metadata" / "manifest.json"
+                    )
+                    if not source_manifest_path.is_file() or sha256(
+                        source_manifest_path
+                    ) != source_manifest_hash:
+                        raise ValueError(
+                            f"resume source manifest hash mismatch: {source_manifest_path}"
+                        )
+                resume_payload = json.loads(resume_path.read_text(encoding="utf-8"))
+                expected_run_signature = {
+                    "config_sha256": sha256(args.config.resolve()),
+                    "wp": wp, "cfg": cfg, "fluid_hp": hp,
+                    "fluid_he": he, "seed": seed,
+                }
+                if resume_payload.get("run_signature") != expected_run_signature:
+                    raise ValueError(
+                        f"resume checkpoint task identity mismatch: {resume_path}"
+                    )
+                target_maximum = item.get("extension_target_maximum_generations")
+                if target_maximum is not None and target_maximum != args.generations:
+                    raise ValueError(
+                        "extension task target maximum does not match --generations: "
+                        f"task={target_maximum} cli={args.generations}"
+                    )
+            task = {
                 "run_id": run_id, "stage": args.stage, "wp": wp, "cfg": cfg,
                 "cb_class": config["configurations"][cfg]["class"],
                 "fluid_hp": hp, "fluid_he": he, "seed": seed,
@@ -350,9 +436,10 @@ def expand_tasks(args, config: dict[str, Any], batch_dir: Path) -> list[dict[str
                         "screening_samples": args.samples,
                 "config_path": str(args.config.resolve()),
                 "config_sha256": sha256(args.config.resolve()),
-                "run_dir": str(run_dir),
-                "resume_from": str(args.resume_from.resolve()) if args.resume_from else None,
-            })
+                "run_dir": str(run_dir), "resume_from": resume_from,
+            }
+            task.update({field: item[field] for field in lineage_fields if field in item})
+            tasks.append(task)
     atomic_json(batch_dir / "filtered_cases.json", filtered)
     if not tasks:
         raise ValueError("no eligible tasks after fluid gates")
@@ -1142,6 +1229,25 @@ def run_worker(task_path: Path) -> int:
             summary.update({
                 "sample_count": len(sampling_rows),
                 "feasible_rate": len(df) / len(sampling_rows),
+            })
+        if task.get("source_evaluation_count") is not None:
+            summary.update({
+                "incremental_evaluation_count": summary["evaluation_count"],
+                "incremental_feasible_count": summary["feasible_count"],
+                "incremental_failure_count": summary["failure_count"],
+                "cumulative_evaluation_count": (
+                    int(task["source_evaluation_count"]) + summary["evaluation_count"]
+                ),
+                "cumulative_feasible_count": (
+                    int(task["source_feasible_count"]) + summary["feasible_count"]
+                ),
+                "cumulative_failure_count": (
+                    int(task["source_failure_count"]) + summary["failure_count"]
+                ),
+                "cumulative_front_revalidation_solver_calls": (
+                    int(task.get("source_front_revalidation_solver_calls", 0))
+                    + int(summary.get("front_revalidation_solver_calls", 0))
+                ),
             })
         atomic_json(output_dir / "summary.json", summary)
         manifest.update(summary)

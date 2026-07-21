@@ -30,6 +30,7 @@ import logging
 import warnings
 import math
 import ast
+import itertools
 import re
 import numpy as np
 import pandas as pd
@@ -56,6 +57,7 @@ logger = logging.getLogger(__name__)
 
 # Penalty value for infeasible solutions
 INFEASIBLE_PENALTY = -1e6
+_DEAP_CREATOR_COUNTER = itertools.count()
 
 
 # ============================================================================
@@ -924,9 +926,11 @@ class NSGAOptimizer:
 
     def _setup_deap(self):
         """Configure DEAP creator and toolbox."""
-        # Use unique names to avoid conflicts when running multiple instances
-        fit_name = f'FitnessMax_{id(self)}'
-        ind_name = f'Individual_{id(self)}'
+        # DEAP creator classes live for the entire process. Python object IDs
+        # may be reused after collection, so use a monotonic process-local ID.
+        creator_id = next(_DEAP_CREATOR_COUNTER)
+        fit_name = f'FitnessMax_{creator_id}'
+        ind_name = f'Individual_{creator_id}'
 
         if fit_name not in dir(creator):
             creator.create(fit_name, base.Fitness,
@@ -1081,6 +1085,42 @@ class NSGAOptimizer:
             )
         return individual
 
+    @staticmethod
+    def _validate_checkpoint_optimizer_signature(checkpoint: Dict,
+                                                 expected: Dict,
+                                                 generation: int) -> None:
+        """Validate resume compatibility, allowing only a longer run horizon.
+
+        A checkpoint made at a shorter maximum generation is a deterministic
+        prefix of the same optimizer.  Every other optimizer setting must be
+        identical, and the requested horizon may never move backwards.
+        """
+        actual = checkpoint.get('optimizer_signature')
+        if not isinstance(actual, dict):
+            raise ValueError('CHECKPOINT_OPTIMIZER_SIGNATURE_MISSING')
+        actual_maximum = int(actual.get('maximum_generations', -1))
+        expected_maximum = int(expected.get('maximum_generations', -1))
+        if actual_maximum < 1 or expected_maximum < actual_maximum:
+            raise ValueError(
+                'CHECKPOINT_MAXIMUM_GENERATIONS_CANNOT_DECREASE: '
+                f'checkpoint={actual_maximum} requested={expected_maximum}'
+            )
+        if generation < 0 or generation > actual_maximum \
+        or generation >= expected_maximum:
+            raise ValueError(
+                'CHECKPOINT_GENERATION_OUTSIDE_RESUME_HORIZON: '
+                f'generation={generation} checkpoint_maximum={actual_maximum} '
+                f'requested_maximum={expected_maximum}'
+            )
+        comparable_actual = dict(actual)
+        comparable_expected = dict(expected)
+        comparable_actual.pop('maximum_generations', None)
+        comparable_expected.pop('maximum_generations', None)
+        if comparable_actual != comparable_expected:
+            raise ValueError(
+                'CHECKPOINT_OPTIMIZER_SIGNATURE_MISMATCH_EXCEPT_RUN_HORIZON'
+            )
+
     def run(self, verbose: bool = True, resume_state: Optional[Dict] = None,
             checkpoint_every: int = 0, checkpoint_callback=None) -> Tuple[List, tools.Logbook]:
         """
@@ -1102,8 +1142,10 @@ class NSGAOptimizer:
             self.generation_metrics = []
         else:
             expected_signature = self.export_checkpoint(0, [], [])['optimizer_signature']
-            if resume_state.get('optimizer_signature') != expected_signature:
-                raise ValueError('checkpoint optimizer signature does not match current configuration')
+            start_generation = int(resume_state['generation'])
+            self._validate_checkpoint_optimizer_signature(
+                resume_state, expected_signature, start_generation
+            )
             pop = [self._individual_from_record(record)
                    for record in resume_state['population']]
             if len(pop) != self.pop_size:
@@ -1115,7 +1157,6 @@ class NSGAOptimizer:
             random.setstate(self._decode_state(resume_state['random_state']))
             np.random.set_state(self._decode_state(resume_state['numpy_random_state']))
             self.generation_metrics = list(resume_state.get('generation_metrics', []))
-            start_generation = int(resume_state['generation'])
 
         # Statistics
         stats = tools.Statistics(lambda ind: ind.fitness.values)
