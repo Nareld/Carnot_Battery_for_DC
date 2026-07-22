@@ -1,0 +1,8 @@
+{
+  "failure_count": 114536,
+  "feasible_count": 32920,
+  "feasible_rate": 0.22325303819444445,
+  "sample_count": 147456,
+  "task_count": 576,
+  "zero_feasible_tasks": 96
+}

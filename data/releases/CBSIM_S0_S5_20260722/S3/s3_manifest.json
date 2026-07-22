@@ -1,0 +1,107 @@
+{
+  "acceptance_gates": {
+    "all_s2_runs_verified": true,
+    "git_clean_requirement_satisfied": true,
+    "s4_task_keys_unique": true,
+    "three_objective_extremes_covered": true,
+    "top_k_per_observed_wp_configuration": true
+  },
+  "accepted_s2_dataset_id": "ACCEPTED_S2_20260720T022648Z",
+  "accepted_s2_manifest": "${CBSIM_RUNS_ROOT}/S2_ACCEPTED/ACCEPTED_S2_20260720T022648Z/accepted_manifest.json",
+  "accepted_s2_manifest_sha256": "085734e7f37fea72ae18d8a3e62d7dc9dba1b2d539eaf12b6146b448f1d2e36f",
+  "accepted_s2_registry_sha256": "e56b5926852e6d98ab1772423a870dbaac852da5c01647692a3b707b1ea70080",
+  "algorithm": "s3_exact_hv_extreme_coverage_v1",
+  "config": "${CBSIM_REPO_ROOT}/pure_deap_nsga/experiments/large_fluid_pairs/optimization_config_large_pairs.json",
+  "config_sha256": "2452bed17143498748ed5fe2e446308e3f8f1c3e669d60cb35bb75c90938d88d",
+  "created_from_accepted_s2": "${CBSIM_RUNS_ROOT}/S2_ACCEPTED/ACCEPTED_S2_20260720T022648Z/accepted_run_registry.csv",
+  "git_commit": "36b2c8588490339ef136ec141f9a21089b52daf7",
+  "git_dirty": false,
+  "hypervolume_spec": {
+    "algorithm": "deap_exact_max_v1",
+    "bounds_tolerance": 1e-12,
+    "lower": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "objectives": [
+      "eta_p2p",
+      "energy_density_thermal",
+      "exergy_efficiency"
+    ],
+    "reference_point_normalized": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "upper": [
+      1.0,
+      50.0,
+      1.0
+    ]
+  },
+  "input_run_count": 318,
+  "observed_configurations": [
+    "SBVCHP_SBORC",
+    "SRVCHP_SRORC"
+  ],
+  "output_sha256": {
+    "candidate_ranking.csv": "3b55f70ca9e80d800c0d4855d4b308109006f56deb3d6a21274f9fa602838946",
+    "extreme_coverage.csv": "c54023f220f271985e38ae8abe2b18e9ec274b59928ff39ba1343a67a16fac80",
+    "pooled_fronts/DC-A__SBVCHP_SBORC_pareto.csv": "8ebc291271baa79c3f38f2cd60d607c933c5eea1259da9d6b0723aba9a401808",
+    "pooled_fronts/DC-A__SRVCHP_SRORC_pareto.csv": "c998c44e513d03f31e7b602a5ffebff950715155daec28f2aaea62cdbb5974e2",
+    "pooled_fronts/DC-A_global_pareto.csv": "63ed0b77cd6af0f4f9f937811deb2279d6d70690fa02c09a5e7d989c157b0a1f",
+    "pooled_fronts/DC-B__SBVCHP_SBORC_pareto.csv": "41ec4407940d0cbbd5a0c010bec304e20f51a0f1dbc8234f8d35076d84e0bb2d",
+    "pooled_fronts/DC-B__SRVCHP_SRORC_pareto.csv": "78def26801248f3327fe9fe1610f42d2b1a7ef8a38e902b60110903105ab7716",
+    "pooled_fronts/DC-B_global_pareto.csv": "79f9ba3df2ac84f1cd53ab7038924202c6ca611ebd9eb75cc21b572ee9124ecb",
+    "pooled_fronts/DC-C__SBVCHP_SBORC_pareto.csv": "303a04a29e64b76a0bc5e2e04454ff04f9afe555761b78aed98ce862fc63ed58",
+    "pooled_fronts/DC-C__SRVCHP_SRORC_pareto.csv": "1373a4241c01d562901d6ece726c998b28d4a3ff80ac7a516edb2b38f08a14f1",
+    "pooled_fronts/DC-C_global_pareto.csv": "9c5f6f3bbc86f86a7c5f78f230c5312a84cb8dc7e980c4c8717913c9bd54c869",
+    "pooled_fronts/DC-D__SBVCHP_SBORC_pareto.csv": "bca4966a6477eab2fe9461b3b672424d2c7d6a1e95bd12b5d82aa1b93b8b5ee8",
+    "pooled_fronts/DC-D__SRVCHP_SRORC_pareto.csv": "e614e17c8f955a88bdf014633955de8524a71366fd9dd7782efb336ebeb8d7a3",
+    "pooled_fronts/DC-D_global_pareto.csv": "b38b8332fc822fd5549b5453906bc8f2bd5b76698c3e2760c5d57880327bfb08",
+    "pooled_fronts/DC-E__SBVCHP_SBORC_pareto.csv": "ac80d072451de7aea68f0e9b5687d31fe164c858f2456d8eb7e9c03707a85d4f",
+    "pooled_fronts/DC-E__SRVCHP_SRORC_pareto.csv": "781f26450d1a10d1d934d1401a4ffcd71eb6e6e74e35d925b4de56cc8730c911",
+    "pooled_fronts/DC-E_global_pareto.csv": "0a0e8555167d7c20c8097a6cdfa055925735581e7d5926e884e0d0298fda457f",
+    "pooled_fronts/DC-F__SBVCHP_SBORC_pareto.csv": "550c86324339f4c5d8d97ce6fec5b9d8790730666952da3860b29b9aa3857511",
+    "pooled_fronts/DC-F__SRVCHP_SRORC_pareto.csv": "a7c7478a8febdfc436555d0c2fe4a2625d4d380ab36f28a925eace05a90be146",
+    "pooled_fronts/DC-F_global_pareto.csv": "0cdcfb9cb55f42c0359fc9783b2cd89b71c9e997a505a50dc118cedd0d5174da",
+    "s3_selected_candidates.csv": "0921b0f704e537a3857ddb686bb034b8828c17c3f073ed0bcfaa3b5dd8d86784",
+    "s4_task_list.csv": "7b6319643d56aa4e412e37af4a4b49ac3efd3cbf8a745c0ff898deaadc19817c",
+    "selection_units.csv": "46f8105214d3213ceb85c26da699e0df78ccce40e287935eacc1aee30d8eec6d"
+  },
+  "report_sha256": "6886a9b62222dc6a8a6d53c04ed53d100b8368b7c62866310f4a0ea8135f8301",
+  "s4_confirmation_seeds": [
+    17,
+    42,
+    73,
+    101,
+    202
+  ],
+  "s4_task_count": 300,
+  "schema_version": "1.0",
+  "scientific_scope": "Exploratory thermodynamic candidate selection only; extremes require S5 review and no S4-unconfirmed row is an engineering recommendation.",
+  "selected_candidate_count": 60,
+  "selection_policy": [
+    "minimum deterministic candidate set covering each objective maximum",
+    "greedy exact normalized-hypervolume gain fill",
+    "HV tie band rel=1e-12 abs=1e-14, then pooled-front points, candidate HV, candidate key"
+  ],
+  "selection_top_k": 5,
+  "selection_unit": "working_point_x_observed_configuration",
+  "selection_unit_count": 12,
+  "status": "S3_COMPLETED_CANDIDATES_UNCONFIRMED",
+  "unobserved_configurations": [
+    "SBVCHP_SRORC",
+    "SRVCHP_SBORC"
+  ],
+  "verified_certified_front_point_count": 357599,
+  "working_points": [
+    "DC-A",
+    "DC-B",
+    "DC-C",
+    "DC-D",
+    "DC-E",
+    "DC-F"
+  ]
+}
