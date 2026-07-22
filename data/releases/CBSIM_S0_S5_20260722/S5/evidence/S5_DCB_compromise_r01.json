@@ -1,0 +1,937 @@
+{
+  "computed_kpis": {
+    "energy_density_thermal": 28.089175488027053,
+    "eta_p2p": 0.36781738196122354,
+    "exergy_efficiency": 0.3010397392952935
+  },
+  "elapsed_s": 0.955089693001355,
+  "physical_evidence": {
+    "closures": {
+      "he_energy": {
+        "relative_residual": 0.0,
+        "residual": 0.0
+      },
+      "he_exergy_state_identity": {
+        "relative_residual": 8.54735575147129e-17,
+        "residual": 3.637978807091713e-12
+      },
+      "hp_energy": {
+        "relative_residual": 0.0,
+        "residual": 0.0
+      },
+      "hp_exergy_state_identity": {
+        "relative_residual": 0.0,
+        "residual": 0.0
+      }
+    },
+    "diagnostics": {
+      "issues": [],
+      "n_errors": 0,
+      "n_issues": 0,
+      "n_warnings": 0,
+      "ok": true,
+      "primary_code": null
+    },
+    "exergy_loss_groups": {
+      "he_condenser_and_sink": 5115.798586650557,
+      "he_evaporator_and_source": 2960.849354759574,
+      "he_expander": 1488.531384785936,
+      "he_pump": 1219.524454410599,
+      "he_regenerator": 107.62756126401109,
+      "hp_compressor": 7155.680338824226,
+      "hp_condenser": 16162.82996749565,
+      "hp_evaporator_and_source": 17179.75043826324,
+      "hp_regenerator": 5010.30101862819,
+      "hp_valve": 4976.859582253848
+    },
+    "gates": {
+      "decision_bounds": true,
+      "energy_conservation": true,
+      "exergy_consistency": true,
+      "kpi": true,
+      "phase": true,
+      "pinch_strict": true,
+      "pressure": true,
+      "solver": true,
+      "solver_residuals": true,
+      "state_points": true
+    },
+    "kpi_comparison": {
+      "energy_density_thermal": {
+        "absolute_difference": 0.0,
+        "pass": true,
+        "s4_value": 28.089175488027053,
+        "s5_value": 28.089175488027053
+      },
+      "eta_p2p": {
+        "absolute_difference": 5.551115123125783e-17,
+        "pass": true,
+        "s4_value": 0.3678173819612235,
+        "s5_value": 0.36781738196122354
+      },
+      "exergy_efficiency": {
+        "absolute_difference": 0.0,
+        "pass": true,
+        "s4_value": 0.3010397392952935,
+        "s5_value": 0.3010397392952935
+      }
+    },
+    "passed": true,
+    "phase": {
+      "he_expansion_path": [
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 312.0826495947032,
+          "enthalpy_J_kg": 375617.5141619682,
+          "entropy_J_kgK": 1517.8071553434058,
+          "fluid": "R227EA",
+          "phase": "supercritical_gas",
+          "pressure_Pa": 2792156.6550568556,
+          "quality": -1.0,
+          "state": 0,
+          "temperature_K": 375.5934030892719
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 304.4738067950564,
+          "enthalpy_J_kg": 375492.81601213047,
+          "entropy_J_kgK": 1517.8441519681292,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2749439.0946440855,
+          "quality": -1.0,
+          "state": 1,
+          "temperature_K": 374.7485994475865
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 296.94585978891837,
+          "enthalpy_J_kg": 375365.0077701338,
+          "entropy_J_kgK": 1517.8822428944134,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2706721.534231315,
+          "quality": -1.0,
+          "state": 2,
+          "temperature_K": 373.8956436939194
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 289.5042095724391,
+          "enthalpy_J_kg": 375233.9661531857,
+          "entropy_J_kgK": 1517.9214748412905,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2664003.9738185448,
+          "quality": -1.0,
+          "state": 3,
+          "temperature_K": 373.0349989888953
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 282.1536249935259,
+          "enthalpy_J_kg": 375099.5633586851,
+          "entropy_J_kgK": 1517.9618962813022,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2621286.4134057746,
+          "quality": -1.0,
+          "state": 4,
+          "temperature_K": 372.1671060523377
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 274.8982688909903,
+          "enthalpy_J_kg": 374961.66676580266,
+          "entropy_J_kgK": 1518.0035575596532,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2578568.8529930045,
+          "quality": -1.0,
+          "state": 5,
+          "temperature_K": 371.2923815424604
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 267.7417291679102,
+          "enthalpy_J_kg": 374820.13861053524,
+          "entropy_J_kgK": 1518.046511024364,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2535851.292580234,
+          "quality": -1.0,
+          "state": 6,
+          "temperature_K": 370.41121684670134
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 260.68705216282234,
+          "enthalpy_J_kg": 374674.83563279203,
+          "entropy_J_kgK": 1518.0908111681756,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2493133.7321674637,
+          "quality": -1.0,
+          "state": 7,
+          "temperature_K": 369.5239770705381
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 253.7367763866832,
+          "enthalpy_J_kg": 374525.6086931827,
+          "entropy_J_kgK": 1518.136514783193,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2450416.1717546936,
+          "quality": -1.0,
+          "state": 8,
+          "temperature_K": 368.63100005575785
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 246.8929653627296,
+          "enthalpy_J_kg": 374372.3023563068,
+          "entropy_J_kgK": 1518.1836811298153,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2407698.6113419235,
+          "quality": -1.0,
+          "state": 9,
+          "temperature_K": 367.7325953109228
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 240.15723888102738,
+          "enthalpy_J_kg": 374214.75443647587,
+          "entropy_J_kgK": 1518.2323721217667,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2364981.050929153,
+          "quality": -1.0,
+          "state": 10,
+          "temperature_K": 366.8290427869914
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 233.53080242728228,
+          "enthalpy_J_kg": 374052.7955009941,
+          "entropy_J_kgK": 1518.2826525294338,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2322263.4905163827,
+          "quality": -1.0,
+          "state": 11,
+          "temperature_K": 365.92059147511844
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 227.0144748584985,
+          "enthalpy_J_kg": 373886.2483253514,
+          "entropy_J_kgK": 1518.334590203982,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2279545.9301036126,
+          "quality": -1.0,
+          "state": 12,
+          "temperature_K": 365.00745783833173
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 220.6087145850384,
+          "enthalpy_J_kg": 373714.92729392776,
+          "entropy_J_kgK": 1518.388256325058,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2236828.369690842,
+          "quality": -1.0,
+          "state": 13,
+          "temperature_K": 364.08982411268937
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 214.31364459978536,
+          "enthalpy_J_kg": 373538.63773907674,
+          "entropy_J_kgK": 1518.443725675098,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2194110.809278072,
+          "quality": -1.0,
+          "state": 14,
+          "temperature_K": 363.1678365266718
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 208.12907669528622,
+          "enthalpy_J_kg": 373357.17521066155,
+          "entropy_J_kgK": 1518.5010769435937,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2151393.2488653017,
+          "quality": -1.0,
+          "state": 15,
+          "temperature_K": 362.2416034910816
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 202.05453515541151,
+          "enthalpy_J_kg": 373170.324667296,
+          "entropy_J_kgK": 1518.5603930650395,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2108675.6884525316,
+          "quality": -1.0,
+          "state": 16,
+          "temperature_K": 361.31119380736783
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 196.08928012310813,
+          "enthalpy_J_kg": 372977.8595795537,
+          "entropy_J_kgK": 1518.6217615946678,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2065958.128039761,
+          "quality": -1.0,
+          "state": 17,
+          "temperature_K": 360.37663493209635
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 190.23233075072852,
+          "enthalpy_J_kg": 372779.5409343006,
+          "entropy_J_kgK": 1518.6852751259073,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 2023240.5676269908,
+          "quality": -1.0,
+          "state": 18,
+          "temperature_K": 359.43791132119236
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 184.4824881457571,
+          "enthalpy_J_kg": 372575.11612794263,
+          "entropy_J_kgK": 1518.7510317567067,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1980523.0072142207,
+          "quality": -1.0,
+          "state": 19,
+          "temperature_K": 358.4949628623848
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 178.83835805189855,
+          "enthalpy_J_kg": 372364.3177347661,
+          "entropy_J_kgK": 1518.8191356074562,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1937805.4468014503,
+          "quality": -1.0,
+          "state": 20,
+          "temperature_K": 357.5476833869067
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 173.29837314272098,
+          "enthalpy_J_kg": 372146.86213457363,
+          "entropy_J_kgK": 1518.8896973998458,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1895087.88638868,
+          "quality": -1.0,
+          "state": 21,
+          "temperature_K": 356.59591923745825
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 167.86081477154852,
+          "enthalpy_J_kg": 371922.4479814517,
+          "entropy_J_kgK": 1518.962835103699,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1852370.3259759098,
+          "quality": -1.0,
+          "state": 22,
+          "temperature_K": 355.63946785472854
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 162.52383400432862,
+          "enthalpy_J_kg": 371690.7544926267,
+          "entropy_J_kgK": 1519.0386746605207,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1809652.7655631395,
+          "quality": -1.0,
+          "state": 23,
+          "temperature_K": 354.67807633269484
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 157.28547176251664,
+          "enthalpy_J_kg": 371451.4395328975,
+          "entropy_J_kgK": 1519.11735079485,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1766935.205150369,
+          "quality": -1.0,
+          "state": 24,
+          "temperature_K": 353.7114398826959
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 152.143677917799,
+          "enthalpy_J_kg": 371204.1374659493,
+          "entropy_J_kgK": 1519.1990079259092,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1724217.644737599,
+          "quality": -1.0,
+          "state": 25,
+          "temperature_K": 352.73920013720414
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 147.09632920430298,
+          "enthalpy_J_kg": 370948.45673879265,
+          "entropy_J_kgK": 1519.283801194437,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1681500.0843248286,
+          "quality": -1.0,
+          "state": 26,
+          "temperature_K": 351.7609432162471
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 142.1412458435287,
+          "enthalpy_J_kg": 370683.9771594488,
+          "entropy_J_kgK": 1519.3718976223522,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1638782.5239120584,
+          "quality": -1.0,
+          "state": 27,
+          "temperature_K": 350.7761974717801
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 137.27620680914887,
+          "enthalpy_J_kg": 370410.2468205976,
+          "entropy_J_kgK": 1519.46347742628,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1596064.963499288,
+          "quality": -1.0,
+          "state": 28,
+          "temperature_K": 349.7844308172836
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 132.49896369049384,
+          "enthalpy_J_kg": 370126.7786128513,
+          "entropy_J_kgK": 1519.5587355100427,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1553347.403086518,
+          "quality": -1.0,
+          "state": 29,
+          "temperature_K": 348.7850475406276
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 127.80725314288037,
+          "enthalpy_J_kg": 369833.0462603085,
+          "entropy_J_kgK": 1519.6578831662532,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1510629.8426737476,
+          "quality": -1.0,
+          "state": 30,
+          "temperature_K": 347.7773844869761
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 123.19880793878697,
+          "enthalpy_J_kg": 369528.47979748424,
+          "entropy_J_kgK": 1519.7611500232626,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1467912.2822609774,
+          "quality": -1.0,
+          "state": 31,
+          "temperature_K": 346.76070648416237
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 118.67136665521362,
+          "enthalpy_J_kg": 369212.4603900092,
+          "entropy_J_kgK": 1519.8687862816978,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1425194.721848207,
+          "quality": -1.0,
+          "state": 32,
+          "temperature_K": 345.73420086460624
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 114.22268204984155,
+          "enthalpy_J_kg": 368884.3143807501,
+          "entropy_J_kgK": 1519.9810652932301,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1382477.1614354367,
+          "quality": -1.0,
+          "state": 33,
+          "temperature_K": 344.6969709135774
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 109.85052819013346,
+          "enthalpy_J_kg": 368543.3064171092,
+          "entropy_J_kgK": 1520.0982865480546,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1339759.6010226666,
+          "quality": -1.0,
+          "state": 34,
+          "temperature_K": 343.6480280431468
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 105.55270640820432,
+          "enthalpy_J_kg": 368188.63148272515,
+          "entropy_J_kgK": 1520.2207791505218,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1297042.0406098962,
+          "quality": -1.0,
+          "state": 35,
+          "temperature_K": 342.58628245037977
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 101.32705015774785,
+          "enthalpy_J_kg": 367819.405615614,
+          "entropy_J_kgK": 1520.3489058827201,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1254324.480197126,
+          "quality": -1.0,
+          "state": 36,
+          "temperature_K": 341.5105319666721
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 97.17142884987301,
+          "enthalpy_J_kg": 367434.65504230437,
+          "entropy_J_kgK": 1520.4830679797574,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1211606.9197843557,
+          "quality": -1.0,
+          "state": 37,
+          "temperature_K": 340.4194487375527
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 93.08375074197036,
+          "enthalpy_J_kg": 367033.30339008727,
+          "entropy_J_kgK": 1520.6237107719649,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1168889.3593715855,
+          "quality": -1.0,
+          "state": 38,
+          "temperature_K": 339.31156328460355
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 89.0619649481794,
+          "enthalpy_J_kg": 366614.15655214817,
+          "entropy_J_kgK": 1520.771330390333,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1126171.7989588152,
+          "quality": -1.0,
+          "state": 39,
+          "temperature_K": 338.18524538666645
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 85.104062632099,
+          "enthalpy_J_kg": 366175.88466618356,
+          "entropy_J_kgK": 1520.9264817847481,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1083454.238546045,
+          "quality": -1.0,
+          "state": 40,
+          "temperature_K": 337.0386810668578
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 81.20807743169424,
+          "enthalpy_J_kg": 365717.00051661953,
+          "entropy_J_kgK": 1521.0897883766213,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 1040736.6781332747,
+          "quality": -1.0,
+          "state": 41,
+          "temperature_K": 335.8698447728602
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 77.37208515369433,
+          "enthalpy_J_kg": 365235.83346950373,
+          "entropy_J_kgK": 1521.2619537611893,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 998019.1177205043,
+          "quality": -1.0,
+          "state": 42,
+          "temperature_K": 334.67646557112454
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 73.59420275845393,
+          "enthalpy_J_kg": 364730.49777934677,
+          "entropy_J_kgK": 1521.4437760057392,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 955301.5573077342,
+          "quality": -1.0,
+          "state": 43,
+          "temperature_K": 333.4559858168017
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 69.87258663726456,
+          "enthalpy_J_kg": 364198.85373801325,
+          "entropy_J_kgK": 1521.6361652646294,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 912583.9968949638,
+          "quality": -1.0,
+          "state": 44,
+          "temperature_K": 332.20551026989585
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 66.20543015978924,
+          "enthalpy_J_kg": 363638.4596272594,
+          "entropy_J_kgK": 1521.8401656783576,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 869866.4364821936,
+          "quality": -1.0,
+          "state": 45,
+          "temperature_K": 330.9217429503709
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 62.59096043905497,
+          "enthalpy_J_kg": 363046.51172411663,
+          "entropy_J_kgK": 1522.056982867663,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 827148.8760694233,
+          "quality": -1.0,
+          "state": 46,
+          "temperature_K": 329.6009080743466
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 59.027434221760245,
+          "enthalpy_J_kg": 362419.768596178,
+          "entropy_J_kgK": 1522.2880188273466,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 784431.3156566531,
+          "quality": -1.0,
+          "state": 47,
+          "temperature_K": 328.23865006230665
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 55.51313275905671,
+          "enthalpy_J_kg": 361754.4544616981,
+          "entropy_J_kgK": 1522.5349167394882,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 741713.7552438828,
+          "quality": -1.0,
+          "state": 48,
+          "temperature_K": 326.8299056556335
+        },
+        {
+          "component": "HE_EXPANSION",
+          "density_kg_m3": 52.04635544047243,
+          "enthalpy_J_kg": 361046.1342385886,
+          "entropy_J_kgK": 1522.7996192856997,
+          "fluid": "R227EA",
+          "phase": "gas",
+          "pressure_Pa": 698996.1948311124,
+          "quality": -1.0,
+          "state": 49,
+          "temperature_K": 325.36873830028014
+        }
+      ],
+      "he_expansion_wet_point_count": 0,
+      "hp_compressor_inlet_phase": "gas",
+      "hp_post_expansion_quality": 0.22166667621951447,
+      "phase_error_codes": []
+    },
+    "pinch": {
+      "he_cond_cold_end": {
+        "actual_K": 17.218827440253392,
+        "model_tolerance_pass": true,
+        "model_tolerance_required_K": 4.75,
+        "required_K": 5.0,
+        "strict_pass": true
+      },
+      "he_cond_hot_end": {
+        "actual_K": 11.820633462246747,
+        "model_tolerance_pass": true,
+        "model_tolerance_required_K": 4.75,
+        "required_K": 5.0,
+        "strict_pass": true
+      },
+      "he_cond_internal": {
+        "actual_K": 5.0,
+        "model_tolerance_pass": true,
+        "model_tolerance_required_K": 4.75,
+        "required_K": 5.0,
+        "strict_pass": true
+      },
+      "he_evap_cold_end": {
+        "actual_K": 30.56231679692297,
+        "model_tolerance_pass": true,
+        "model_tolerance_required_K": 2.8499999999999996,
+        "required_K": 3.0,
+        "strict_pass": true
+      },
+      "he_evap_hot_end": {
+        "actual_K": 17.386614171951862,
+        "model_tolerance_pass": true,
+        "model_tolerance_required_K": 2.8499999999999996,
+        "required_K": 3.0,
+        "strict_pass": true
+      },
+      "he_evap_internal": {
+        "actual_K": 2.9999999999994316,
+        "model_tolerance_pass": true,
+        "model_tolerance_required_K": 2.8499999999999996,
+        "required_K": 3.0,
+        "strict_pass": true
+      },
+      "hp_cond_cold_end": {
+        "actual_K": 23.67487762917449,
+        "model_tolerance_pass": true,
+        "model_tolerance_required_K": 2.8499999999999996,
+        "required_K": 3.0,
+        "strict_pass": true
+      },
+      "hp_cond_hot_end": {
+        "actual_K": 28.757418751248736,
+        "model_tolerance_pass": true,
+        "model_tolerance_required_K": 2.8499999999999996,
+        "required_K": 3.0,
+        "strict_pass": true
+      },
+      "hp_cond_internal": {
+        "actual_K": 3.0,
+        "model_tolerance_pass": true,
+        "model_tolerance_required_K": 2.8499999999999996,
+        "required_K": 3.0,
+        "strict_pass": true
+      },
+      "hp_evap_cold_end": {
+        "actual_K": 5.000000001923354,
+        "model_tolerance_pass": true,
+        "model_tolerance_required_K": 4.75,
+        "required_K": 5.0,
+        "strict_pass": true
+      },
+      "hp_evap_hot_end": {
+        "actual_K": 6.293762973276614,
+        "model_tolerance_pass": true,
+        "model_tolerance_required_K": 4.75,
+        "required_K": 5.0,
+        "strict_pass": true
+      }
+    },
+    "pressure": {
+      "he_expansion_ratio": 3.9945233975579524,
+      "he_high_pressure_Pa": 2792156.6550568556,
+      "he_low_pressure_Pa": 698996.1948311124,
+      "he_maximum_high_pressure_Pa": 2865258.0957676424,
+      "he_minimum_low_pressure_Pa": 576760.6273996494,
+      "he_state_pressures_Pa": [
+        698996.1948311124,
+        2792156.6550568556,
+        2792156.6550568556,
+        698996.1948311124
+      ],
+      "hp_compression_ratio": 8.65529564251359,
+      "hp_high_pressure_Pa": 950139.4497722461,
+      "hp_minimum_high_pressure_Pa": 545632.2013636897,
+      "hp_state_pressures_Pa": [
+        109775.5049643013,
+        950139.4497722461,
+        950139.4497722461,
+        109775.5049643013
+      ]
+    },
+    "recomputed_cb_exergy_efficiency": 0.3010397392952935,
+    "solver_residuals": {
+      "he_1": 0.0,
+      "he_2": -5.684341886080801e-13,
+      "hp": 1.0477378964424133e-09
+    },
+    "state_points": [
+      {
+        "component": "HP",
+        "density_kg_m3": 3.249583902618533,
+        "enthalpy_J_kg": 352987.4842056072,
+        "entropy_J_kgK": 1163.6750796582933,
+        "fluid": "R601a",
+        "phase": "gas",
+        "pressure_Pa": 109775.5049643013,
+        "quality": -1.0,
+        "state": 1,
+        "temperature_K": 306.8561598426824
+      },
+      {
+        "component": "HP",
+        "density_kg_m3": 23.355385091004973,
+        "enthalpy_J_kg": 547325.7644057606,
+        "entropy_J_kgK": 1475.8361666961932,
+        "fluid": "R601a",
+        "phase": "gas",
+        "pressure_Pa": 950139.4497722461,
+        "quality": -1.0,
+        "state": 2,
+        "temperature_K": 416.6256665120703
+      },
+      {
+        "component": "HP",
+        "density_kg_m3": 530.8044902354012,
+        "enthalpy_J_kg": 176917.70621997962,
+        "entropy_J_kgK": 521.9563931574904,
+        "fluid": "R601a",
+        "phase": "liquid",
+        "pressure_Pa": 950139.4497722461,
+        "quality": -1.0,
+        "state": 3,
+        "temperature_K": 371.7061578717891
+      },
+      {
+        "component": "HP",
+        "density_kg_m3": 14.58438897334921,
+        "enthalpy_J_kg": 81064.54397449101,
+        "entropy_J_kgK": 267.2856790038096,
+        "fluid": "R601a",
+        "phase": "twophase",
+        "pressure_Pa": 109775.5049643013,
+        "quality": 0.22166667635952075,
+        "state": 4,
+        "temperature_K": 303.3138272559653
+      },
+      {
+        "component": "HE",
+        "density_kg_m3": 1336.2520002225958,
+        "enthalpy_J_kg": 242884.02891359897,
+        "entropy_J_kgK": 1145.9201247576843,
+        "fluid": "R227EA",
+        "phase": "liquid",
+        "pressure_Pa": 698996.1948311124,
+        "quality": -1.0,
+        "state": 1,
+        "temperature_K": 309.9705910120296
+      },
+      {
+        "component": "HE",
+        "density_kg_m3": 1345.9511902620816,
+        "enthalpy_J_kg": 245717.54065733033,
+        "entropy_J_kgK": 1150.010426988809,
+        "fluid": "R227EA",
+        "phase": "liquid",
+        "pressure_Pa": 2792156.6550568556,
+        "quality": -1.0,
+        "state": 2,
+        "temperature_K": 312.3864223346237
+      },
+      {
+        "component": "HE",
+        "density_kg_m3": 312.0923242670379,
+        "enthalpy_J_kg": 375615.63100776135,
+        "entropy_J_kgK": 1517.8021415275023,
+        "fluid": "R227EA",
+        "phase": "supercritical_gas",
+        "pressure_Pa": 2792156.6550568556,
+        "quality": -1.0,
+        "state": 3,
+        "temperature_K": 375.5926170438301
+      },
+      {
+        "component": "HE",
+        "density_kg_m3": 52.04631136162229,
+        "enthalpy_J_kg": 361046.27702803595,
+        "entropy_J_kgK": 1522.8000581398292,
+        "fluid": "R227EA",
+        "phase": "gas",
+        "pressure_Pa": 698996.1948311124,
+        "quality": -1.0,
+        "state": 4,
+        "temperature_K": 325.36888917070087
+      }
+    ]
+  },
+  "status": "PASS",
+  "task": {
+    "accepted_s4_manifest": "${CBSIM_RUNS_ROOT}/S4_ACCEPTED/ACCEPTED_S4_20260721T101316Z/accepted_manifest.json",
+    "accepted_s4_manifest_sha256": "dc342d2111ec0f192f41b8694b65f265e4782ffb4d894f0dbacaeb8186ad5cdb",
+    "algorithm": "s5_independent_physical_revalidation_v1",
+    "repeat": 1,
+    "representative": {
+      "T_st_ht": 119.8007985564072,
+      "candidate_key": "DC-B|SRVCHP_SRORC|R601a|R227EA",
+      "cfg": "SRVCHP_SRORC",
+      "compromise_distance_to_local_ideal": 0.3332229686925455,
+      "dT_he_ev_sh": 2.928262543621661,
+      "dT_hp_cd_sc": 14.646931132423596,
+      "dT_hp_cs_gl": 4.836170703653226,
+      "dT_hp_ev_sh": 3.5424573667510435,
+      "dT_st_sp": 50.00204206332917,
+      "energy_density_thermal": 28.089175488027053,
+      "eta_max_cp": 0.8985682070747231,
+      "eta_max_ex": 0.8999386359075516,
+      "eta_p2p": 0.3678173819612235,
+      "eta_pm": 0.5498279955923818,
+      "exergy_efficiency": 0.3010397392952935,
+      "fluid_he": "R227EA",
+      "fluid_hp": "R601a",
+      "point_sha256": "d61b726527c07a7fc329fa747407803ded9f0c0635a9bd0c7aecc4db0c34178d",
+      "representative_id": "S5_DCB_compromise",
+      "representative_type": "compromise",
+      "requires_s5_review": false,
+      "s3_selection_rank": 5,
+      "source_manifest_sha256": "96518bee9c8f48453c738cb1190f1c7d3e180ed2ca6a2b62e3bdcacd1e696e9e",
+      "source_pareto_row_index": 316,
+      "source_pareto_sha256": "4a8d30628bc12614c2f6b508bb4f60b08c748290f457713c6f35f533a13ad6ea",
+      "source_run_id": "S4_DCB_SRVCHP-SRORC_R601a_R227EA_seed017_20260720T095135Z",
+      "source_s2_run_id": "S2_DCB_SRVCHP-SRORC_R601a_R227EA_seed042_20260717T060425Z",
+      "source_seed": 17,
+      "wp": "DC-B"
+    },
+    "representative_input_sha256": "6cb0dbe92948f903e555b923cd487b092f11be05d8553d66fce5f2c24b5343b1",
+    "schema_version": "1.0"
+  },
+  "warnings": [
+    "In: SBORC.find_p, fsolve did not converge. least_squares was tested instead. Message: `gtol` termination condition is satisfied."
+  ]
+}

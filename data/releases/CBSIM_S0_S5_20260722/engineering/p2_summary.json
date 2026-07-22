@@ -1,0 +1,37 @@
+{
+  "status": "ENGINEERING_DESIGN_FREEZE_BLOCKED",
+  "s4_candidates": {
+    "total": 17,
+    "PASS": 0,
+    "REJECT": 12,
+    "CONDITIONAL": 5
+  },
+  "s5_representatives": {
+    "total": 18,
+    "PASS": 0,
+    "REJECT": 14,
+    "CONDITIONAL": 4
+  },
+  "below_0_5_bar": 3,
+  "below_1_0_bar": 11,
+  "below_standard_atmosphere": 13,
+  "solver_fallback_representatives": [
+    "S5_DCA_density",
+    "S5_DCB_compromise",
+    "S5_DCB_density",
+    "S5_DCC_density",
+    "S5_DCD_density",
+    "S5_DCE_density"
+  ],
+  "solver_fallback_warning_records": 20,
+  "sources": {
+    "safety_gwp": "https://www.dcceew.gov.au/environment/protection/ozone/rac/global-warming-potential-values-hfc-refrigerants",
+    "ashrae_designations": "https://www.ashrae.org/technical-resources/standards-and-guidelines/ashrae-refrigerant-designations",
+    "eu_fgas": "https://eur-lex.europa.eu/eli/reg/2024/573/2024-02-20/eng",
+    "china_hfc_2026": "https://www.mee.gov.cn/xxgk2018/xxgk/xxgk05/202510/W020251024653086234356.pdf",
+    "acetone_niosh": "https://www.cdc.gov/niosh/npg/npgd0004.html",
+    "cyclopentane_niosh": "https://www.cdc.gov/niosh/npg/npgd0171.html",
+    "unep_odp": "https://ozone.unep.org/20-questions-and-answers",
+    "ipcc_ar6": "https://www.ipcc.ch/report/ar6/wg3/downloads/report/IPCC_AR6_WGIII_Annex-II.pdf"
+  }
+}

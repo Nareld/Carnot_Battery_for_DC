@@ -1,0 +1,167 @@
+{
+  "_comment": "Exploratory 12x12 pure-fluid pool with frozen S2 convergence and front-certification rules.",
+  "working_points": {
+    "DC-A": {"name": "DC-A", "label": "Air-cooled (Winter)", "T_hs": 35.0, "T_cs": 5.0, "delta_T": 30.0, "T_st_ht_min": 50.0, "T_st_ht_max": 120.0, "dT_st_sp_min": 15.0, "dT_st_sp_max": 60.0},
+    "DC-B": {"name": "DC-B", "label": "Air-cooled (Summer)", "T_hs": 40.0, "T_cs": 25.0, "delta_T": 15.0, "T_st_ht_min": 55.0, "T_st_ht_max": 120.0, "dT_st_sp_min": 15.0, "dT_st_sp_max": 60.0},
+    "DC-C": {"name": "DC-C", "label": "Cold-plate liquid (Winter)", "T_hs": 50.0, "T_cs": 5.0, "delta_T": 45.0, "T_st_ht_min": 65.0, "T_st_ht_max": 130.0, "dT_st_sp_min": 20.0, "dT_st_sp_max": 70.0},
+    "DC-D": {"name": "DC-D", "label": "Cold-plate liquid (Summer)", "T_hs": 55.0, "T_cs": 25.0, "delta_T": 30.0, "T_st_ht_min": 70.0, "T_st_ht_max": 130.0, "dT_st_sp_min": 20.0, "dT_st_sp_max": 70.0},
+    "DC-E": {"name": "DC-E", "label": "High-perf liquid (Winter)", "T_hs": 65.0, "T_cs": 5.0, "delta_T": 60.0, "T_st_ht_min": 80.0, "T_st_ht_max": 140.0, "dT_st_sp_min": 25.0, "dT_st_sp_max": 80.0},
+    "DC-F": {"name": "DC-F", "label": "High-perf liquid (Summer)", "T_hs": 75.0, "T_cs": 25.0, "delta_T": 50.0, "T_st_ht_min": 90.0, "T_st_ht_max": 145.0, "dT_st_sp_min": 25.0, "dT_st_sp_max": 80.0}
+  },
+  "configurations": {
+    "SBVCHP_SBORC": {"class": "SBVCHP_SBORC_STES2T", "has_hp_regenerator": false, "has_he_regenerator": false},
+    "SBVCHP_SRORC": {"class": "SBVCHP_SRORC_STES2T", "has_hp_regenerator": false, "has_he_regenerator": true},
+    "SRVCHP_SBORC": {"class": "SRVCHP_SBORC_STES2T", "has_hp_regenerator": true, "has_he_regenerator": false},
+    "SRVCHP_SRORC": {"class": "SRVCHP_SRORC_STES2T", "has_hp_regenerator": true, "has_he_regenerator": true}
+  },
+  "fluid_candidates": {
+    "hp_fluids": {
+      "R1233zd(E)": {"Tc_C": 166.451, "pool": "baseline"},
+      "R245fa": {"Tc_C": 153.860, "pool": "baseline"},
+      "R600a": {"Tc_C": 134.660, "pool": "baseline"},
+      "R600": {"Tc_C": 151.975, "pool": "baseline"},
+      "R601": {"Tc_C": 196.550, "pool": "exploratory"},
+      "R601a": {"Tc_C": 187.200, "pool": "exploratory"},
+      "R1234ze(Z)": {"Tc_C": 150.120, "pool": "exploratory"},
+      "R236ea": {"Tc_C": 139.259, "pool": "exploratory"},
+      "R365MFC": {"Tc_C": 186.853, "pool": "exploratory"},
+      "Cyclopentane": {"Tc_C": 238.570, "pool": "exploratory"},
+      "CycloHexane": {"Tc_C": 280.450, "pool": "exploratory"},
+      "Acetone": {"Tc_C": 234.950, "pool": "exploratory"}
+    },
+    "he_fluids": {
+      "R1234ze(E)": {"Tc_C": 109.363, "pool": "baseline"},
+      "R227EA": {"Tc_C": 101.750, "pool": "baseline"},
+      "R134a": {"Tc_C": 101.062, "pool": "baseline"},
+      "R152A": {"Tc_C": 113.261, "pool": "baseline"},
+      "R1234yf": {"Tc_C": 94.700, "pool": "exploratory"},
+      "R290": {"Tc_C": 96.740, "pool": "exploratory"},
+      "R600a": {"Tc_C": 134.660, "pool": "exploratory"},
+      "R600": {"Tc_C": 151.975, "pool": "exploratory"},
+      "R245fa": {"Tc_C": 153.860, "pool": "exploratory"},
+      "R236ea": {"Tc_C": 139.259, "pool": "exploratory"},
+      "R236fa": {"Tc_C": 124.920, "pool": "exploratory"},
+      "R365MFC": {"Tc_C": 186.853, "pool": "exploratory"}
+    }
+  },
+  "optimization": {
+    "algorithm": "NSGA2",
+    "population_size": 48,
+    "n_generations": 300,
+    "crossover_prob": 0.9,
+    "mutation_prob": 0.1,
+    "seed": 42,
+    "diagnostics_enabled": true,
+    "isolated_property_query_hp_fluids": ["Acetone"],
+    "isolated_property_query_he_fluids": [
+      "R1234yf", "R290", "R600a", "R245fa", "R134a", "R152A"
+    ],
+    "objectives": ["eta_p2p", "energy_density_thermal", "exergy_efficiency"],
+    "hypervolume": {
+      "enabled": true,
+      "schema_version": "1.0",
+      "algorithm": "deap_exact_max_v1",
+      "objectives": ["eta_p2p", "energy_density_thermal", "exergy_efficiency"],
+      "normalization_bounds": {
+        "eta_p2p": [0.0, 1.0],
+        "energy_density_thermal": [0.0, 50.0],
+        "exergy_efficiency": [0.0, 1.0]
+      },
+      "reference_point_normalized": [0.0, 0.0, 0.0],
+      "bounds_tolerance": 1e-12,
+      "window_generations": 20,
+      "relative_tolerance": 0.005,
+      "minimum_generations": 150,
+      "consecutive_generations": 5,
+      "stop_on_convergence": true
+    },
+    "front_revalidation": {
+      "enabled": true,
+      "independent_repeats": 2,
+      "relative_tolerance": 1e-8,
+      "absolute_tolerance": 1e-10,
+      "require_all_feasible": true
+    },
+    "dT_he_cs_gl": 10.0,
+    "dT_hp_ev_pp": 5.0,
+    "dT_hp_cd_pp": 3.0,
+    "dT_he_ev_pp": 3.0,
+    "dT_he_cd_pp": 5.0,
+    "dT_he_cd_sc": 3.0,
+    "p_st_ht": 250000.0,
+    "p_st_lt": 250000.0,
+    "epsilon_hp": 0.80,
+    "epsilon_he": 0.80,
+    "fluid_st": "H2O"
+  },
+  "experiment": {
+    "status": "approved_for_full_run",
+    "screening_design": "scrambled_sobol",
+    "screening_points_per_pair": 256,
+    "screening_working_points": ["DC-B", "DC-D", "DC-F"],
+    "confirmation_seeds": [17, 42, 73, 101, 202],
+    "confirmation_population_size": 100,
+    "confirmation_generations": 150,
+    "profiles": {
+      "S1_screening": {
+        "sampler": "scrambled_sobol",
+        "points_per_pair": 256,
+        "working_points": ["DC-B", "DC-D", "DC-F"]
+      },
+      "S2_coarse": {
+        "population_size": 48,
+        "minimum_generations": 150,
+        "maximum_generations": 300,
+        "hv_window_generations": 20,
+        "hv_relative_tolerance": 0.005,
+        "seeds": [42]
+      },
+      "S2_exception_extension": {
+        "population_size": 48,
+        "minimum_generations": 150,
+        "maximum_generations": 450,
+        "hv_window_generations": 20,
+        "hv_relative_tolerance": 0.005,
+        "hv_consecutive_generations": 5,
+        "seeds": [42],
+        "resume_from_previous_checkpoint": false,
+        "scope": "only S2 tasks that reached 300 generations without hypervolume convergence"
+      },
+      "S3_selection": {
+        "input_contract": "canonical accepted S2 registry only",
+        "selection_unit": "working_point_x_observed_configuration",
+        "pairs_per_unit": 5,
+        "algorithm": "s3_exact_hv_extreme_coverage_v1",
+        "mandatory_coverage": [
+          "eta_p2p_max", "energy_density_thermal_max", "exergy_efficiency_max"
+        ],
+        "fill_rule": "greedy exact normalized-hypervolume gain",
+        "hypervolume_tie_relative_tolerance": 1e-12,
+        "hypervolume_tie_absolute_tolerance": 1e-14,
+        "tie_break": [
+          "pooled_front_point_count_desc",
+          "candidate_normalized_hypervolume_desc",
+          "candidate_key_asc"
+        ],
+        "require_input_order_invariance": true,
+        "emit_s4_task_list": true
+      },
+      "S4_confirmation": {
+        "population_size": 100,
+        "generations": 150,
+        "seeds": [17, 42, 73, 101, 202]
+      },
+      "S6_fine_front": {
+        "population_size": 512,
+        "generations": 300,
+        "seeds": [17, 42, 73, 101, 202],
+        "cross_generation_archive": true,
+        "archive_tolerance": 1e-09,
+        "target_unique_front_points": 1000,
+        "scope": "only S4-validated WP/config/fluid pairs"
+      }
+    },
+    "pressure_window_bar": [0.5, 40.0],
+    "require_engineering_review": true
+  }
+}

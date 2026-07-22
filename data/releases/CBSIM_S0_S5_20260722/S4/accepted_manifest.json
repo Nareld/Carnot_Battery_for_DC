@@ -1,0 +1,62 @@
+{
+  "acceptance_gates": {
+    "all_candidates_have_five_seeds": true,
+    "all_canonical_runs_hv_converged": true,
+    "at_least_one_s5_candidate_per_wp": true,
+    "canonical_300_unique_tasks": true,
+    "exactly_18_unique_representatives": true,
+    "exactly_60_candidate_groups": true,
+    "git_clean_or_explicitly_allowed": true,
+    "three_representatives_per_wp": true
+  },
+  "algorithm": "s4_canonical_five_seed_acceptance_v1",
+  "base_batch": "${CBSIM_RUNS_ROOT}/S4_FORMAL/BATCH_S4_20260720T095135Z",
+  "base_batch_manifest_sha256": "a8b9e2ae80dc4c4410bf1baed84e28a488ad0189c5f36a76fb35c5824ade15c5",
+  "canonical_policy": "218 converged base runs plus 82 extension runs replacing their source runs",
+  "canonical_totals": {
+    "evaluation_count": 4267679,
+    "failure_count": 564785,
+    "feasible_count": 3702894,
+    "front_revalidation_solver_calls": 1647302,
+    "pareto_size": 671331,
+    "raw_archive_size": 673405,
+    "revalidation_quarantined_count": 1473
+  },
+  "config": "${CBSIM_REPO_ROOT}/pure_deap_nsga/experiments/large_fluid_pairs/optimization_config_large_pairs.json",
+  "config_sha256": "2452bed17143498748ed5fe2e446308e3f8f1c3e669d60cb35bb75c90938d88d",
+  "counts": {
+    "accepted_s5_candidates": 17,
+    "base_runs_retained": 218,
+    "candidate_groups": 60,
+    "canonical_runs": 300,
+    "extension_runs": 82,
+    "s5_representatives": 18
+  },
+  "cv_definition": "sample standard deviation ddof=1 divided by absolute mean",
+  "extension_batch": "${CBSIM_RUNS_ROOT}/S4_EXTENSION/BATCH_S4_20260721T031641Z",
+  "extension_batch_manifest_sha256": "4923eb685d57b93772dd25f5e785c2754961b2da8582f385e201f7334fc88f1b",
+  "git_commit": "8fd7fd856f899595424ca3f44c271875212d590e",
+  "git_dirty": false,
+  "igd_plus_definition": "exact maximization IGD+ from each seed front to the five-seed nondominated union under frozen bounds",
+  "output_sha256": {
+    "accepted_run_registry.csv": "ae277e6c85f1afd5ebed72cdf00e4acb4c4c689abe7e83daf6b48b2336603130",
+    "candidate_stability.csv": "3574a9968a9c7d4430c09f1e73caaafa5bda09ddd6c46137031d678ae958d1d0",
+    "s5_diagnostic_queue.csv": "38a71fcae45fa44bca08bea22bc2e37a0e03f8dd3fb561239335462b6bc75f6c",
+    "s5_representative_points.csv": "6cb0dbe92948f903e555b923cd487b092f11be05d8553d66fce5f2c24b5343b1",
+    "seed_candidate_rankings.csv": "c031ea31d63e82a83583fde510320d4ddfec2243e1ec6d724f1a0251ec41f3a5",
+    "seed_stability_metrics.csv": "d1db73c98d523abc630b417f0cc95bf8cbf0bf595456d0afbf88ce417c6437fd"
+  },
+  "ranking_definition": "certified normalized HV rank among 10 configuration-fluid candidates per WP and seed; top-3 in at least 4/5 seeds",
+  "s3_task_list": "${CBSIM_RUNS_ROOT}/S3_FORMAL/S3_20260720T031411Z/s4_task_list.csv",
+  "s3_task_list_sha256": "7b6319643d56aa4e412e37af4a4b49ac3efd3cbf8a745c0ff898deaadc19817c",
+  "schema_version": "1.0",
+  "scientific_scope": "S4-stable thermodynamic candidates approved for S5 independent physical revalidation; not engineering recommendations",
+  "status": "ACCEPTED_FOR_S5",
+  "thresholds": {
+    "extreme_kpi_cv": 0.03,
+    "hv_cv": 0.05,
+    "igd_plus": 0.03,
+    "top_rank_minimum_seeds": 4,
+    "top_rank_n": 3
+  }
+}

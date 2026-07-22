@@ -1,0 +1,127 @@
+{
+  "schema_version": "1.0",
+  "format": "Deterministic gzip (level 9, mtime 0), one CSV header, accepted registry order",
+  "source_registries": {
+    "S2": {
+      "path": "${CBSIM_RUNS_ROOT}/S2_ACCEPTED/ACCEPTED_S2_20260720T022648Z/accepted_run_registry.csv",
+      "sha256": "e56b5926852e6d98ab1772423a870dbaac852da5c01647692a3b707b1ea70080"
+    },
+    "S4": {
+      "path": "${CBSIM_RUNS_ROOT}/S4_ACCEPTED/ACCEPTED_S4_20260721T101316Z/accepted_run_registry.csv",
+      "sha256": "ae277e6c85f1afd5ebed72cdf00e4acb4c4c689abe7e83daf6b48b2336603130"
+    }
+  },
+  "asset_count": 12,
+  "total_size_bytes": 91293113,
+  "total_front_rows": 1028930,
+  "assets": [
+    {
+      "stage": "S2",
+      "working_point": "DC-A",
+      "asset": "s2_dca_accepted_fronts.csv.gz",
+      "run_count": 48,
+      "front_row_count": 46240,
+      "size_bytes": 4044255,
+      "sha256": "b68b893e795c8c895d40f2f0e24036e15133f23bd854fe891947c22d979056cd"
+    },
+    {
+      "stage": "S2",
+      "working_point": "DC-B",
+      "asset": "s2_dcb_accepted_fronts.csv.gz",
+      "run_count": 60,
+      "front_row_count": 50388,
+      "size_bytes": 4406124,
+      "sha256": "de7a34b73c10d9b5f71119d13b4ea99a272dd41383817573993fc27250c413bf"
+    },
+    {
+      "stage": "S2",
+      "working_point": "DC-C",
+      "asset": "s2_dcc_accepted_fronts.csv.gz",
+      "run_count": 47,
+      "front_row_count": 58848,
+      "size_bytes": 5132783,
+      "sha256": "0fb092bff193110b9122995ae728ede9f31c6f0bc32737f1da2826121d033ebc"
+    },
+    {
+      "stage": "S2",
+      "working_point": "DC-D",
+      "asset": "s2_dcd_accepted_fronts.csv.gz",
+      "run_count": 60,
+      "front_row_count": 66063,
+      "size_bytes": 5814105,
+      "sha256": "a4adb30b0f35c6ed14475bf870babf405b6ced5e1b43125801eb4db9d07ea847"
+    },
+    {
+      "stage": "S2",
+      "working_point": "DC-E",
+      "asset": "s2_dce_accepted_fronts.csv.gz",
+      "run_count": 43,
+      "front_row_count": 54833,
+      "size_bytes": 4783967,
+      "sha256": "c1216e5c19647661239f52db29d7614f2c8ad60d3917381c76e8426914f66a7d"
+    },
+    {
+      "stage": "S2",
+      "working_point": "DC-F",
+      "asset": "s2_dcf_accepted_fronts.csv.gz",
+      "run_count": 60,
+      "front_row_count": 81227,
+      "size_bytes": 7114418,
+      "sha256": "83534096b7ca5b0279af66bdbceeae6447e10f8b665d247e88908a3f031e48ec"
+    },
+    {
+      "stage": "S4",
+      "working_point": "DC-A",
+      "asset": "s4_dca_accepted_fronts.csv.gz",
+      "run_count": 50,
+      "front_row_count": 104951,
+      "size_bytes": 9372876,
+      "sha256": "d8d4621679a79c13ecc5e91b5587770ff0a55713ce11cc872a9a87eb722e6351"
+    },
+    {
+      "stage": "S4",
+      "working_point": "DC-B",
+      "asset": "s4_dcb_accepted_fronts.csv.gz",
+      "run_count": 50,
+      "front_row_count": 85192,
+      "size_bytes": 7557276,
+      "sha256": "faa9248d63be83803362f5c43d4130ace643479be221ce91e11ffd4efaba1f94"
+    },
+    {
+      "stage": "S4",
+      "working_point": "DC-C",
+      "asset": "s4_dcc_accepted_fronts.csv.gz",
+      "run_count": 50,
+      "front_row_count": 122846,
+      "size_bytes": 10975149,
+      "sha256": "dea721bb1fd1c5f2567ca12626ac27cad3b75bd51cda2768eb23b10e50544557"
+    },
+    {
+      "stage": "S4",
+      "working_point": "DC-D",
+      "asset": "s4_dcd_accepted_fronts.csv.gz",
+      "run_count": 50,
+      "front_row_count": 112306,
+      "size_bytes": 10118879,
+      "sha256": "de13d3ed2c2d4bcec57f3b089d787f99cdd80a4702a12ee64edb0be0c2b13bbd"
+    },
+    {
+      "stage": "S4",
+      "working_point": "DC-E",
+      "asset": "s4_dce_accepted_fronts.csv.gz",
+      "run_count": 50,
+      "front_row_count": 122152,
+      "size_bytes": 10886892,
+      "sha256": "9ce9c0bcb5319d3c8c1916b2139ffecfdff50f4c51fa3e72545231d12fa79a01"
+    },
+    {
+      "stage": "S4",
+      "working_point": "DC-F",
+      "asset": "s4_dcf_accepted_fronts.csv.gz",
+      "run_count": 50,
+      "front_row_count": 123884,
+      "size_bytes": 11086389,
+      "sha256": "c70ef1fddc0e9235653e7a4f456fdcfb6038b401372d21cce9dc8a4bd40e0c29"
+    }
+  ]
+}

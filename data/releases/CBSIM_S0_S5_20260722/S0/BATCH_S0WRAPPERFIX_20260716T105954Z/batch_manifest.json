@@ -1,0 +1,15 @@
+{
+  "accepted_compute": true,
+  "batch_id": "BATCH_S0WRAPPERFIX_20260716T105954Z",
+  "config_path": "${CBSIM_REPO_ROOT}/pure_deap_nsga/experiments/large_fluid_pairs/optimization_config_large_pairs.json",
+  "config_sha256": "b5b201e0018a36455ea1c5f168c620829740483f5faa29dff9a91b4f4c05eae8",
+  "end_time_utc": "2026-07-16T11:04:19Z",
+  "git_commit": "89680b467397c0c5bd7c2ff7521180df0ec55dbf",
+  "git_dirty": true,
+  "schema_version": "0.1",
+  "stage": "S0WRAPPERFIX",
+  "start_time_utc": "2026-07-16T10:59:55Z",
+  "status": "COMPUTE_COMPLETE",
+  "task_count": 109,
+  "workers": 8
+}

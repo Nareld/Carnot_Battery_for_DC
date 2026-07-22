@@ -1,0 +1,9 @@
+fluid,standard_safety_class,gwp100_ar4,odp,gate,basis,source,s5_max_temperature_C
+Acetone,NOT_FOUND_IN_PUBLIC_STANDARD_TABLE,not_assessed,not_controlled_as_ODS; individual numeric value not verified,CONDITIONAL,"NIOSH: flash point 0 F, LFL 2.5%, REL 250 ppm; charge and occupational controls required",acetone_niosh;ashrae_designations,189.251
+Cyclopentane,NOT_FOUND_IN_PUBLIC_STANDARD_TABLE,not_assessed,not_controlled_as_ODS; individual numeric value not verified,CONDITIONAL,"NIOSH: flash point -35 F, LFL 1.1%, REL 600 ppm; high flammability controls required",cyclopentane_niosh;ashrae_designations,173.337
+R600,A3,<5,not_controlled_as_ODS,CONDITIONAL,"Higher flammability; charge, zoning, ventilation, detection and shutdown design required",safety_gwp,125.143
+R601a,A3,<5,not_controlled_as_ODS,CONDITIONAL,"Higher flammability; source supports <5, not an exact GWP value",safety_gwp,143.476
+R227EA,A1,3220,0,CONDITIONAL,"High-GWP controlled HFC; quota, leak checking, recovery and local-use review required",safety_gwp;eu_fgas;china_hfc_2026;unep_odp,102.443
+R236ea,n/a,1370,0,REJECT,No standard safety classification in cited table; blocks equipment design freeze,safety_gwp;eu_fgas;china_hfc_2026;unep_odp,94.0
+R245fa,B1,1030,0,CONDITIONAL,"Higher chronic-toxicity group and controlled HFC; exposure, leak and recovery controls required",safety_gwp;eu_fgas;china_hfc_2026;unep_odp,87.741
+R365MFC,n/a,794,0,REJECT,No standard safety classification in cited table (listed mainly as foaming agent); blocks design freeze,safety_gwp;eu_fgas;china_hfc_2026;unep_odp,111.348
